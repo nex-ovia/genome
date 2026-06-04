@@ -1,0 +1,230 @@
+# examples/strategy-doc/genome.toml — a NON-CODE genome.
+#
+# Proves the same tool renders any domain. This is a go-to-market strategy
+# DOCUMENT: domain = "document", so a "component" is a Section and a "link" is a
+# Reference. No code, no functions, no hexagonal layers — yet the same renderer
+# produces a leader-friendly map. Self-contained (no extends/include) for clarity.
+
+[project]
+name    = "Project Helios — Go-to-Market Strategy"
+kind    = "strategy"
+domain  = "document"
+summary = "The go-to-market plan for Project Helios: who we sell to, how we win, and what it takes to launch."
+intent  = """
+One source of truth for the Helios launch. It states the decision, sizes the
+market, sets positioning and pricing, lays out the execution plan, and names the
+risks — each section written by a person or drafted by an agent, every claim
+traceable to a source. A leader can read it top to bottom; the team can drill in.
+"""
+source  = "document"
+schema  = "nexovia/2"
+status  = "in_progress"
+
+# The document's structure (its outline). No dependency rule, no hexagonal layers.
+[architecture]
+pattern     = "outline"
+description = "Five parts, from why-we're-here to what-could-go-wrong."
+
+[architecture.layers.context]
+order = 1
+label = "Context"
+role  = "Why this document exists and what decision it drives."
+
+[architecture.layers.market]
+order = 2
+label = "Market"
+role  = "Customers, size, and the competitive landscape."
+
+[architecture.layers.strategy]
+order = 3
+label = "Strategy"
+role  = "Positioning, the wedge, and pricing."
+
+[architecture.layers.execution]
+order = 4
+label = "Execution"
+role  = "Channels, timeline, and resourcing."
+
+[architecture.layers.risks]
+order = 5
+label = "Risks"
+role  = "What could go wrong, and how we mitigate it."
+
+# Sections (components). status: final | review | draft | planned
+[components.exec_summary]
+label   = "Executive summary"
+layer   = "context"
+status  = "final"
+owner   = "CEO"
+summary = "Helios targets mid-market ops teams drowning in manual reconciliation; we win on time-to-value and price."
+why     = "The one section every leader reads — it must stand alone."
+key_points = ["Beachhead: mid-market ops", "Wedge: 1-day setup", "Target: $2M ARR in year one"]
+sources    = ["board deck Q2"]
+
+[components.problem]
+label   = "Problem & decision"
+layer   = "context"
+status  = "final"
+owner   = "Product"
+summary = "Reconciliation is manual, error-prone, and owned by overworked teams. We decide whether to enter now."
+why     = "Frames the stakes so the rest of the document has a purpose."
+key_points = ["8 hrs/week wasted per analyst", "Errors cost trust with finance"]
+
+[components.market_sizing]
+label   = "Market sizing"
+layer   = "market"
+status  = "final"
+owner   = "Strategy"
+summary = "TAM ~$4B across mid-market finance ops, growing ~15% a year as tooling consolidates."
+why     = "Sets the ceiling on the opportunity and justifies the investment."
+key_points = ["TAM $4B", "SAM $900M", "~15% CAGR"]
+sources    = ["Gartner 2025", "internal survey n=120"]
+
+[components.competition]
+label   = "Competitive landscape"
+layer   = "market"
+status  = "review"
+owner   = "Strategy"
+summary = "Two incumbents priced for enterprise; a long tail of spreadsheets. We sit between them."
+why     = "Shows the gap our wedge exploits."
+key_points = ["Incumbents: slow, expensive", "Real competitor is the status quo (Excel)"]
+
+[components.positioning]
+label   = "Positioning & wedge"
+layer   = "strategy"
+status  = "review"
+owner   = "Marketing"
+summary = "\"Reconciliation done by Friday, not by quarter-end.\" Land on speed, expand to the finance suite."
+why     = "The promise everything else must support."
+key_points = ["Speed over breadth", "Land-and-expand"]
+
+[components.pricing]
+label   = "Pricing model"
+layer   = "strategy"
+status  = "draft"
+owner   = "Finance"
+summary = "Per-seat with a usage ceiling; a free tier for one analyst to drive bottoms-up adoption."
+why     = "Pricing is the strategy made concrete."
+key_points = ["Free single-seat tier", "$40/seat/mo", "Annual discount 15%"]
+
+[components.channels]
+label   = "Channels & motion"
+layer   = "execution"
+status  = "draft"
+owner   = "Sales"
+summary = "Product-led trial funnels into a light-touch sales assist for teams over five seats."
+why     = "How the strategy actually reaches buyers."
+key_points = ["PLG trial", "Sales-assist > 5 seats"]
+
+[components.timeline]
+label   = "Timeline & resourcing"
+layer   = "execution"
+status  = "planned"
+owner   = "COO"
+summary = "Private beta in Q3, GA in Q4; needs two AEs and one solutions engineer."
+why     = "Turns the plan into dates and headcount."
+key_points = ["Beta Q3", "GA Q4", "Hire: 2 AE, 1 SE"]
+
+[components.risks]
+label   = "Risks & mitigations"
+layer   = "risks"
+status  = "draft"
+owner   = "CEO"
+summary = "Incumbent price cut, slow PLG conversion, and integration depth are the top three risks."
+why     = "Names what could break the plan before it does."
+key_points = ["Incumbent price war", "PLG conversion < 3%", "Integration scope creep"]
+
+# References (links). relation: supports | informs | expands | references
+[[links]]
+from = "positioning"
+to   = "exec_summary"
+relation = "supports"
+provenance = { by = "human", confidence = 1.0 }
+
+[[links]]
+from = "market_sizing"
+to   = "positioning"
+relation = "supports"
+provenance = { by = "human", confidence = 1.0 }
+
+[[links]]
+from = "competition"
+to   = "positioning"
+relation = "informs"
+provenance = { by = "human", confidence = 1.0 }
+
+[[links]]
+from = "pricing"
+to   = "market_sizing"
+relation = "references"
+provenance = { by = "agent", confidence = 0.8 }
+
+[[links]]
+from = "channels"
+to   = "pricing"
+relation = "expands"
+provenance = { by = "human", confidence = 1.0 }
+
+[[links]]
+from = "timeline"
+to   = "channels"
+relation = "supports"
+provenance = { by = "human", confidence = 1.0 }
+
+[[links]]
+from = "risks"
+to   = "pricing"
+relation = "references"
+provenance = { by = "human", confidence = 1.0 }
+
+[[links]]
+from = "problem"
+to   = "exec_summary"
+relation = "supports"
+provenance = { by = "human", confidence = 1.0 }
+
+# Drafting tasks (lifecycle). status: proposed | planned | in_progress | shipped
+[[lifecycle]]
+id = "write-exec"
+kind = "section"
+title = "Write the executive summary"
+status = "shipped"
+priority = "high"
+components = ["exec_summary"]
+why = "The section leaders read first."
+
+[[lifecycle]]
+id = "finalize-tam"
+kind = "research"
+title = "Finalize market sizing with sources"
+status = "shipped"
+priority = "high"
+components = ["market_sizing"]
+why = "Numbers must be defensible."
+
+[[lifecycle]]
+id = "competitive"
+kind = "research"
+title = "Competitive landscape review"
+status = "in_progress"
+priority = "medium"
+components = ["competition"]
+why = "Sharpen the wedge against incumbents."
+
+[[lifecycle]]
+id = "pricing-model"
+kind = "section"
+title = "Decide and write the pricing model"
+status = "planned"
+priority = "high"
+components = ["pricing"]
+why = "Pricing gates the whole motion."
+
+[[lifecycle]]
+id = "risk-register"
+kind = "review"
+title = "Risk register + mitigations sign-off"
+status = "proposed"
+priority = "medium"
+components = ["risks"]
+why = "Leadership needs the downside named."

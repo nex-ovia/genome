@@ -1,0 +1,54 @@
+# genome/delivery.toml — estimates, resourcing, cost (a planning facet).
+#
+# Referenced from nexovia.toml [include].delivery. Estimates are NOT facts you can
+# scan — they are judgments, so each carries by + confidence. by=human reads as a
+# commitment; by=agent reads as a rough estimate. Cost = hours × blended_rate.
+
+[delivery]
+summary      = "Build estimate for nexovia v2, Phases 1–6."
+team         = ["1 Rust engineer", "0.4 designer"]
+currency     = "USD"
+blended_rate = 95          # $/hr
+provenance   = { by = "human", confidence = 0.8 }
+
+[[estimate]]
+item = "feat-contract-render"
+title = "Genome contract + HTML renderer"
+hours = 44
+by = "human"
+confidence = 0.85
+
+[[estimate]]
+item = "feat-scan"
+title = "Deterministic code scanner"
+hours = 60
+by = "human"
+confidence = 0.7
+
+[[estimate]]
+item = "feat-doc-ingest"
+title = "Doc / prompt ingest"
+hours = 36
+by = "agent"
+confidence = 0.55
+
+[[estimate]]
+item = "feat-track"
+title = "Incremental scan on commit/PR"
+hours = 28
+by = "agent"
+confidence = 0.5
+
+[[estimate]]
+item = "feat-enrich"
+title = "Optional LLM enrichment"
+hours = 30
+by = "agent"
+confidence = 0.5
+
+[[estimate]]
+item = "feat-mcp"
+title = "MCP agent server"
+hours = 24
+by = "agent"
+confidence = 0.45

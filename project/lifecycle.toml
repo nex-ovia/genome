@@ -1,0 +1,88 @@
+# genome/lifecycle.toml — product lifecycle: features, enhancements, bugs.
+#
+# Referenced from nexovia.toml [include].lifecycle. Each item links to the components
+# it touches, so completion and drift can be read against real work, and a
+# commit/PR can be tied to the item it advances.
+#   status ∈ proposed | planned | in_progress | shipped | deprecated
+#   kind   ∈ feature | enhancement | bug | chore | spike
+
+[[item]]
+id       = "phase0-spec"
+kind     = "chore"
+title    = "Author the design-first genome + interactive mock"
+status   = "in_progress"
+priority = "high"
+components = ["genome_model", "render_html"]
+why      = "The dogfood: build the spec and the visual target before any Rust."
+
+[[item]]
+id       = "feat-contract-render"
+kind     = "feature"
+title    = "Genome contract + HTML renderer (reproduce the mock)"
+status   = "planned"
+priority = "high"
+components = ["genome_model", "genome_io", "render_html"]
+why      = "Phase 1 — prove schema + TOML→HTML by reproducing this page from the TOML."
+
+[[item]]
+id       = "feat-scan"
+kind     = "feature"
+title    = "Deterministic code scanner (languages, edges, symbols)"
+status   = "planned"
+priority = "high"
+components = ["ingest_scan", "genome_merge"]
+why      = "Capture structure for free before any LLM; the trustworthy skeleton."
+
+[[item]]
+id       = "feat-doc-ingest"
+kind     = "feature"
+title    = "Doc / prompt → design-first genome"
+status   = "planned"
+priority = "medium"
+components = ["ingest_doc"]
+why      = "The strongest differentiator — a genome before code exists."
+
+[[item]]
+id       = "feat-track"
+kind     = "feature"
+title    = "Incremental scan + re-render on commit/PR"
+status   = "proposed"
+priority = "high"
+components = ["track", "ingest_scan"]
+why      = "Makes it a live tool; drift and completion update per change."
+
+[[item]]
+id       = "feat-enrich"
+kind     = "feature"
+title    = "Optional LLM enrichment (BYO key, feature-gated)"
+status   = "proposed"
+priority = "medium"
+components = ["enrich_llm"]
+why      = "Hybrid intelligence, kept off the default path per the efficiency policy."
+
+[[item]]
+id       = "enh-stable-toml"
+kind     = "enhancement"
+title    = "Byte-stable TOML serialization for clean diffs"
+status   = "planned"
+priority = "medium"
+components = ["genome_io"]
+why      = "Re-runs must not churn the file; genome_io owns one canonical format."
+
+[[item]]
+id       = "feat-mcp"
+kind     = "feature"
+title    = "MCP agent server (get_node / set_field / validate)"
+status   = "proposed"
+priority = "low"
+components = ["agent_mcp"]
+why      = "Integration: agents become first-class authors of the genome."
+
+[[item]]
+id       = "bug-prov-edges"
+kind     = "bug"
+title    = "Provenance badge missing on inferred edges in the renderer"
+status   = "proposed"
+priority = "low"
+components = ["render_html"]
+why      = "Edges carry provenance too; the detail panel should show it like fields do."

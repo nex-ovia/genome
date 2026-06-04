@@ -1,0 +1,106 @@
+# schema/nexovia-2.toml — the formal grammar of a nexovia/2 genome.
+#
+# Referenced by [project].schema = "nexovia/2". This is NOT a second spec — it is
+# the contract OF the genome, written IN the genome's own style, ENFORCED by the
+# `validate` component. It is what lets validate gate a PR against the schema, the
+# architecture rule, and the policies. The genome stays the single source of truth.
+#
+# field syntax:  key = { type, required, semantic, of }
+#   type:     string | int | float | bool | path | url | enum:<name> | ref:<kind> | array | table | map
+#   required: must be present
+#   semantic: true => a machine-written value MUST carry a provenance entry (honesty rule)
+#   of:       element type for arrays / maps
+
+id      = "nexovia/2"
+summary = "Grammar for the nexovia project genome. Composable, provenance-bearing, domain-agnostic."
+
+# ── Enumerations ─────────────────────────────────────────────────────────────
+[enums]
+domain      = ["software", "document", "database", "workflow"]
+status      = ["proposed", "planned", "in_progress", "active", "draft", "review", "final", "shipped", "deprecated"]
+relation    = ["calls", "depends_on", "produces", "implements", "references", "supports", "informs", "expands", "related_to", "foreign_key", "handoff"]
+by          = ["human", "agent", "scan", "llm", "org"]
+enforcement = ["validated", "advisory"]
+item_kind   = ["feature", "enhancement", "bug", "chore", "spike", "section", "research", "review"]
+source      = ["code", "document", "prompt", "mixed"]
+
+# ── [project] (required) — the stable anchor ─────────────────────────────────
+[project]
+name    = { type = "string", required = true }
+domain  = { type = "enum:domain", required = true }
+schema  = { type = "string", required = true }
+summary = { type = "string", required = true }
+intent  = { type = "string", required = false }
+status  = { type = "enum:status", required = false }
+source  = { type = "enum:source", required = false }
+repository = { type = "url", required = false }
+
+# ── provenance — the honesty primitive ───────────────────────────────────────
+[provenance]
+by         = { type = "enum:by", required = true }
+confidence = { type = "float", required = true, min = 0.0, max = 1.0 }
+# scan/human => trusted; llm/agent => inferred (carry a real confidence)
+
+# ── [architecture] — declared, not hardcoded ─────────────────────────────────
+[architecture]
+extends         = { type = "url|path", required = false }   # inherit a shared topology
+pattern         = { type = "string", required = false }
+fluid           = { type = "bool", required = false }
+dependency_rule = { type = "string", required = false }     # e.g. core-independent
+# [architecture.layers.<id>]: order(int, req) · label(string, req) · role(string) · plus domain notes
+
+# ── component — each [components.<id>] ───────────────────────────────────────
+# Extensible: any extra fields (functions, libraries, owner, key_points, sources,
+# columns, inputs, outputs, …) are allowed and rendered generically per domain.
+[component]
+label      = { type = "string", required = true }
+layer      = { type = "string", required = false }          # must match an [architecture.layers] id
+status     = { type = "enum:status", required = false }
+summary    = { type = "string", required = false, semantic = true }
+why        = { type = "string", required = false, semantic = true }
+path       = { type = "path", required = false }
+tags       = { type = "array", of = "string", required = false }
+provenance = { type = "map", of = "provenance", required = false }
+extensible = true
+
+# ── link — each [[links]] ────────────────────────────────────────────────────
+[link]
+from       = { type = "ref:component", required = true }
+to         = { type = "ref:component", required = true }
+relation   = { type = "enum:relation", required = true }
+provenance = { type = "provenance", required = true }
+
+# ── policy — each top-level table in a policy file; inline | referenced | hybrid
+[policy]
+statement   = { type = "string", required = false }
+why         = { type = "string", required = false }
+scope       = { type = "array", of = "string", required = false }
+enforcement = { type = "enum:enforcement", required = false }
+ref         = { type = "url|path", required = false }       # referenced (org-owned)
+by          = { type = "enum:by", required = false }
+
+# ── lifecycle item — each [[item]] / [[lifecycle]] ───────────────────────────
+[lifecycle_item]
+id         = { type = "string", required = true }
+kind       = { type = "enum:item_kind", required = true }
+title      = { type = "string", required = true }
+status     = { type = "enum:status", required = true }
+priority   = { type = "string", required = false }
+components = { type = "array", of = "ref:component", required = false }
+why        = { type = "string", required = false }
+
+# ── [include] — composition; extensible to any facet ─────────────────────────
+[include]
+components = { type = "array", of = "path", required = false }
+policies   = { type = "array", of = "path", required = false }
+lifecycle  = { type = "array", of = "path", required = false }
+# Open by design: future facets (delivery, deployment, quality, cost) compose in
+# the same way — reference a fragment, and validate/render pick it up.
+
+# ── [rules] — what `validate` enforces (the PR gate) ─────────────────────────
+[rules]
+require_provenance_on_semantic = true   # honesty: no machine-written summary/why without provenance
+forbid_dangling_links          = true   # every link from/to must resolve to a component
+enforce_layer_dependency_rule  = true   # design: respect [architecture].dependency_rule
+enforce_validated_policies     = true   # policies with enforcement="validated" become gates
+require_known_enums            = true   # status/relation/by/enforcement/kind/domain must be valid

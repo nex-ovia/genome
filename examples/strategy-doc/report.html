@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nexovia — project genome (mock)</title>
+<!--
+  HAND-BUILT VISUAL CONTRACT for nexovia v2 (Phase 0b).
+  No tool produced this — it is the target the Rust renderer (render_html) must
+  reproduce from v2/nexovia.toml in Phase 1. Self-contained, offline, no deps.
+  The graph is a real interactive viewer: TOPOLOGY (force-directed, draggable)
+  and HIERARCHY (tree) views, with per-file function/library drill-in.
+  GENOME below is the parsed v2/nexovia.toml.
+-->
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2a3140; --ink:#e6edf3;
+    --mut:#9aa4b2; --faint:#6e7681; --accent:#58a6ff;
+    --human:#3fb950; --scan:#58a6ff; --llm:#d29922; --agent:#a371f7;
+    --L-governance:#c9d1d9; --L-orchestration:#58a6ff; --L-execution:#3fb950;
+    --L-persistence:#d29922; --L-surface:#a371f7;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:14.5px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86em}
+
+  nav{position:sticky;top:0;z-index:20;display:flex;gap:6px;align-items:center;flex-wrap:wrap;
+    padding:10px 22px;background:#0d1117ee;backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  nav .brand{font-weight:800;letter-spacing:.5px;margin-right:14px}
+  nav .brand b{color:var(--accent)}
+  nav a{font-size:12.5px;color:var(--mut);text-decoration:none;padding:5px 10px;border-radius:7px}
+  nav a:hover{color:var(--ink);background:#ffffff0d}
+
+  section{max-width:1080px;margin:0 auto;padding:34px 22px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--faint);margin:0 0 6px}
+  h2.sec{font-size:22px;margin:0 0 4px}
+  .sublede{color:var(--mut);margin:0 0 22px;max-width:760px}
+
+  .hero{padding-top:48px}
+  .hero h1{font-size:40px;margin:0 0 6px;letter-spacing:-.5px}
+  .hero h1 b{color:var(--accent)}
+  .hero .tag{font-size:18px;max-width:780px;margin:0 0 16px}
+  .hero .intent{color:var(--mut);max-width:840px;white-space:pre-line}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 0}
+  .chip{font-size:11.5px;color:var(--mut);border:1px solid var(--line);border-radius:20px;padding:4px 11px}
+  .chip.warn{border-color:var(--llm);color:var(--llm)}
+  .chip.live{border-color:var(--human);color:var(--human)}
+
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .card h3{margin:0 0 6px;font-size:14px}.card p{margin:0;color:var(--mut);font-size:13px}.card .ic{font-size:18px}
+
+  .stack{display:flex;flex-direction:column;gap:8px}
+  .layer{display:grid;grid-template-columns:160px 1fr 240px;gap:14px;align-items:center;
+    background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--lc,#888);border-radius:9px;padding:12px 14px}
+  .layer .lname{font-weight:700}.layer .lname small{display:block;color:var(--faint);font-weight:400;font-size:11px;margin-top:2px}
+  .layer .lrole{color:var(--mut);font-size:13px}.layer .lrole .hex{color:var(--ink)}
+  .layer .lmods{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .modtag{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:var(--mut);cursor:pointer}
+  .modtag:hover{color:var(--ink);border-color:var(--accent)}
+  .ruleline{margin-top:12px;padding:10px 12px;background:#3fb95015;border:1px solid #3fb95040;border-radius:8px;font-size:13px}
+  .ruleline b{color:var(--human)}
+  .inh,.ovr{font-size:8px;letter-spacing:1px;text-transform:uppercase;border-radius:10px;padding:1px 6px;vertical-align:middle;margin-left:8px}
+  .inh{color:var(--faint);border:1px solid var(--line)}
+  .ovr{color:var(--agent);border:1px solid #a371f755;background:#a371f720}
+
+  /* ===== interactive graph ===== */
+  .gbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+  .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .seg .gbtn{border:0;border-radius:0;border-right:1px solid var(--line)}.seg .gbtn:last-child{border-right:0}
+  .gbtn{font-size:12px;padding:6px 13px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--mut);cursor:pointer}
+  .gbtn.on{color:#fff;border-color:var(--accent);background:#1d2740}
+  .gbtn:hover{color:var(--ink)}
+  .gbar .grow{flex:1}
+  .glegend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--mut)}
+  .glegend b{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  #graph-host{height:540px;position:relative;background:
+    radial-gradient(circle at 1px 1px,#ffffff08 1px,transparent 0) 0 0/24px 24px,var(--panel);
+    border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  #gsvg{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+  #gsvg.grab{cursor:grabbing}
+  .ghint{position:absolute;left:12px;bottom:10px;font-size:11px;color:var(--faint);
+    background:#0d1117cc;border:1px solid var(--line);border-radius:7px;padding:6px 10px;pointer-events:none}
+  .lnk{fill:none;stroke:var(--faint);opacity:.5}
+  .lnk.dep{stroke-width:1.4}.lnk.tree{stroke-width:1.2;opacity:.4}.lnk.fn{stroke-width:1;opacity:.35;stroke-dasharray:3 3}
+  .lnk.hot{stroke:var(--accent);opacity:1;stroke-width:2.2}
+  .gn{cursor:pointer}
+  .gn rect,.gn .chip-r{stroke-width:1.6}
+  .gn.planned rect{stroke-dasharray:5 3}
+  .gn:hover rect{filter:brightness(1.3)}
+  .gn.sel rect{stroke:#fff;stroke-width:2.6}
+  .gn.dim{opacity:.22}
+  .gn .t{font-size:11px;font-weight:600;fill:var(--ink);pointer-events:none}
+  .gn .s{font-size:8.5px;fill:var(--mut);pointer-events:none}
+  .gn.fn .t{font-family:ui-monospace,Menlo,monospace;font-size:9.5px;fill:var(--ink)}
+  .gn.layer .t,.gn.root .t{font-weight:700;fill:#fff}
+  .gcap{fill:var(--faint);font-size:10px;letter-spacing:1px;text-transform:uppercase}
+
+  .detail{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .detail .dt{font-size:17px;font-weight:700}.detail .dp{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--scan);margin-top:2px}
+  .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+  .pill{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--mut);margin:3px 4px 0 0}
+  .field{margin:0 0 12px;padding:10px 11px;background:var(--panel2);border:1px solid var(--line);border-radius:8px}
+  .field .k{font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--faint)}
+  .field .v{margin-top:5px;font-size:12.5px}.field .v i{color:var(--faint)}
+  .prov{display:inline-flex;align-items:center;gap:6px;font-size:10px;padding:2px 7px;border-radius:20px;margin-top:8px}
+  .prov .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+  .prov.human{background:#3fb95020;color:var(--human);border:1px solid #3fb95055}
+  .prov.scan{background:#58a6ff20;color:var(--scan);border:1px solid #58a6ff55}
+  .prov.llm{background:#d2992220;color:var(--llm);border:1px solid #d2992255}
+  .conf{height:4px;border-radius:3px;background:#ffffff14;margin-top:6px;overflow:hidden}.conf>i{display:block;height:100%}
+  .fn{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:#ffffff0c;border:1px solid var(--line);border-radius:5px;padding:1px 5px;margin:2px 3px 0 0;display:inline-block;cursor:pointer}
+  .lib{font-size:11px;color:var(--llm);margin:2px 6px 0 0;display:inline-block}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--faint);font-weight:600}
+  td .ldot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:7px;vertical-align:middle}
+  td.path{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--scan)}
+
+  .policy{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:9px;padding:14px 15px;margin:10px 0}
+  .policy.advisory{border-left-color:var(--faint)}
+  .policy .ph{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .policy .pn{font-weight:700;text-transform:capitalize;font-size:14px}
+  .policy .enf{font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:20px}
+  .policy .enf.validated{background:#3fb95020;color:var(--human);border:1px solid #3fb95055}
+  .policy .enf.advisory{background:#ffffff10;color:var(--faint);border:1px solid var(--line)}
+  .policy .ps{margin-top:7px;font-size:13px}.policy .pw{margin-top:6px;font-size:12.5px;color:var(--mut)}
+
+  .commit{display:grid;grid-template-columns:90px 1fr;gap:14px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .commit .hash{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--scan)}
+  .commit .date{font-size:10.5px;color:var(--faint);margin-top:2px}.commit .msg{font-size:13.5px}
+  .commit .touch{margin-top:5px}.commit .touch .pill{font-size:10px;cursor:pointer}
+  .note{color:var(--faint);font-size:12px;margin-top:14px}
+
+  /* completion strip (hero) */
+  .completion{display:flex;gap:22px;flex-wrap:wrap;margin-top:20px}
+  .meter{min-width:200px}
+  .meter .ml{display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:5px}
+  .meter .ml b{color:var(--ink)}
+  .meter .bar{height:7px;border-radius:5px;background:#ffffff12;overflow:hidden}
+  .meter .bar > i{display:block;height:100%;border-radius:5px}
+
+  /* lifecycle board */
+  .board{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:start}
+  .col{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:10px;min-height:80px}
+  .col h4{margin:0 0 9px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--faint);display:flex;justify-content:space-between}
+  .col h4 span{color:var(--ink);background:#ffffff12;border-radius:10px;padding:0 6px;font-size:10px}
+  .item{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--kc,#888);border-radius:7px;padding:8px 9px;margin-bottom:8px;cursor:pointer}
+  .item:hover{border-color:var(--accent)}
+  .item .it{font-size:12px;font-weight:600;line-height:1.35}
+  .item .im{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center}
+  .kind{font-size:8.5px;letter-spacing:.5px;text-transform:uppercase;border-radius:10px;padding:1px 6px;border:1px solid var(--line);color:var(--mut)}
+  .kind.feature{color:var(--scan);border:1px solid #58a6ff55;background:#58a6ff18}
+  .kind.enhancement{color:var(--human);border:1px solid #3fb95055;background:#3fb95018}
+  .kind.bug{color:#f85149;border:1px solid #f8514955;background:#f8514918}
+  .kind.chore,.kind.spike{color:var(--mut);border:1px solid var(--line)}
+  .prio{font-size:9px;color:var(--faint)}
+  .item .mn{font-size:9.5px;color:var(--faint);font-family:ui-monospace,Menlo,monospace}
+
+  /* drift */
+  .drow{display:grid;grid-template-columns:26px 1fr auto;gap:12px;align-items:center;padding:11px 13px;background:var(--panel);border:1px solid var(--line);border-radius:9px;margin-bottom:9px}
+  .drow.bad{border-left:3px solid #f85149}
+  .drow.warn{border-left:3px solid var(--llm)}
+  .drow.ok{border-left:3px solid var(--faint)}
+  .drow .dic{font-size:16px;text-align:center}
+  .drow .dmsg{font-size:13px}
+  .drow .dmsg small{display:block;color:var(--faint);font-size:11px;margin-top:2px}
+  .drow .dtag{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);border:1px solid var(--line);border-radius:10px;padding:2px 8px;white-space:nowrap}
+  @media(max-width:840px){.board{grid-template-columns:1fr 1fr}}
+
+  @media(max-width:840px){.cards{grid-template-columns:1fr}.dgrid{grid-template-columns:1fr}
+    .layer{grid-template-columns:1fr;gap:6px}.layer .lmods{justify-content:flex-start}}
+  body.view-exec .t-arch, body.view-exec .t-eng{display:none!important}
+  body.view-arch .t-eng{display:none!important}
+  .exf{display:inline-block;margin:2px 8px 2px 0}.exf .exk{font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--faint);margin-right:5px}
+  .planwrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:start}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:15px}
+  .panel h3{margin:0 0 8px;font-size:13px}
+  .panel .big{font-size:20px;font-weight:700}
+  .panel .muted{color:var(--mut);font-size:12px}
+  .panel .ps{color:var(--mut);font-size:12.5px;margin:8px 0}
+  .panel .kv{font-size:12.5px;margin:7px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .panel .kv>span:first-child{color:var(--faint);min-width:118px}
+  .panel .kv.gate{display:block}
+  .mini{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
+  .mini td{padding:5px 6px;border-bottom:1px solid var(--line)}
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand"><b>nexovia</b></span>
+  <a href="#overview">What it is</a><a href="#architecture">Architecture</a>
+  <a href="#graph" class="t-arch">Graph</a><a href="#modules" id="nav_comp">Components</a>
+  <a href="#lifecycle">Lifecycle</a><a href="#delivery">Plan</a><a href="#policies">Policies</a>
+  <a href="#commits">Commits</a><a href="#drift">Drift</a>
+  <span style="flex:1"></span>
+  <span class="seg"><button class="gbtn" id="v_exec" title="Purpose, status, % done, risks, owners">Executive</button><button class="gbtn" id="v_arch" title="All dependencies &amp; structure — no code">Architect</button><button class="gbtn on" id="v_eng" title="Everything incl. functions, libraries, paths">Engineer</button></span>
+</nav>
+
+<section class="hero" id="top">
+  <div class="eyebrow" id="hero_eyebrow"></div>
+  <h1><b>nexovia</b> <span style="color:var(--faint);font-weight:400">/ project genome</span></h1>
+  <p class="tag" id="hero_tag"></p>
+  <p class="intent" id="hero_intent"></p>
+  <div class="chips" id="hero_chips"></div>
+  <div class="completion" id="completion"></div>
+</section>
+
+<section id="overview">
+  <div class="eyebrow">What it is</div>
+  <h2 class="sec">A single source of truth for the whole project</h2>
+  <p class="sublede">Not a throwaway diagram — one editable, version-controlled file that humans and coding agents both read and write, kept live on every commit and PR. Three things make it trustworthy:</p>
+  <div class="cards">
+    <div class="card"><div class="ic">🧬</div><h3>One genome, three sources</h3><p>The same <code>nexovia.toml</code> is generated from existing code, a document, or a plain prompt — and rendered to this HTML for humans.</p></div>
+    <div class="card"><div class="ic">🔍</div><h3>Agent-written, human-validated</h3><p>The scanner and AI agents keep it current on every commit — each field records who wrote it (<b style="color:var(--scan)">scan</b>, <b style="color:var(--agent)">agent</b>, or <b style="color:var(--human)">human</b>) and how sure. A human edit is a sticky guardrail agents can never overwrite.</p></div>
+    <div class="card"><div class="ic">♻️</div><h3>Live, not a snapshot</h3><p>On each commit/PR it scans <b>only what changed</b>, updates the genome incrementally, and regenerates this page so understanding never drifts.</p></div>
+  </div>
+</section>
+
+<section id="architecture">
+  <div class="eyebrow">Design pattern</div>
+  <h2 class="sec" id="arch_title"></h2>
+  <p class="sublede" id="arch_desc"></p>
+  <div class="stack" id="stack"></div>
+  <div class="ruleline" id="rule"></div>
+</section>
+
+<section id="graph" class="t-arch">
+  <div class="eyebrow">Architecture map · interactive</div>
+  <h2 class="sec">Explore the project visually</h2>
+  <p class="sublede">Switch between <b>Topology</b> (how components depend on each other) and <b>Hierarchy</b> (the layer tree). Drag a component, scroll to zoom, drag the canvas to pan. Turn on <b>Functions</b> — or double-click a component — to drill into the functions inside each file.</p>
+  <div class="gbar">
+    <div class="seg">
+      <button class="gbtn on" id="b_topology">Topology</button>
+      <button class="gbtn" id="b_hierarchy">Hierarchy</button>
+    </div>
+    <button class="gbtn" id="b_funcs">＋ Functions</button>
+    <button class="gbtn" id="b_reset">Reset view</button>
+    <span class="grow"></span>
+    <div class="glegend" id="glegend"></div>
+  </div>
+  <div id="graph-host">
+    <svg id="gsvg"><g id="gview"></g></svg>
+    <div class="ghint">drag a component · scroll = zoom · drag canvas = pan · double-click = drill into functions</div>
+  </div>
+  <div class="detail" id="detail"></div>
+</section>
+
+<section id="modules">
+  <div class="eyebrow" id="mod_eyebrow">Inventory</div>
+  <h2 class="sec" id="mod_h">Components</h2>
+  <p class="sublede">What lives in each file, the functions it owns, and the libraries it pulls in — the inventory that stays accurate per commit.</p>
+  <table id="modtable"><thead><tr><th id="th_one">Component</th><th id="th_grp">Group</th><th>Details</th><th>Status</th><th>Provenance</th></tr></thead><tbody></tbody></table>
+</section>
+
+<section id="lifecycle">
+  <div class="eyebrow">Product lifecycle</div>
+  <h2 class="sec">Roadmap — features, enhancements, bugs</h2>
+  <p class="sublede">Every piece of work is an item linked to the modules it touches, moving through the lifecycle. This composes in from <span class="fn">genome/lifecycle.toml</span> — exactly how you'd reference anything this project never imagined.</p>
+  <div class="board" id="board"></div>
+</section>
+
+<section id="delivery">
+  <div class="eyebrow">Delivery · deployment · quality</div>
+  <h2 class="sec">Plan, cost, and how it ships</h2>
+  <p class="sublede">Estimates, deployment model, and the performance/QA bar. Every value is tagged so a <b style="color:var(--human)">commitment</b> reads differently from an <b style="color:var(--llm)">estimate</b> or a <b style="color:var(--scan)">measurement</b>.</p>
+  <div class="planwrap" id="planwrap"></div>
+</section>
+
+<section id="policies">
+  <div class="eyebrow">Rules of engagement</div>
+  <h2 class="sec">Policies declared in the genome</h2>
+  <p class="sublede"><b style="color:var(--human)">validated</b> policies are enforced by the validator; <b style="color:var(--faint)">advisory</b> ones are surfaced as warnings.</p>
+  <div id="pols"></div>
+</section>
+
+<section id="commits">
+  <div class="eyebrow">Tracked over time</div>
+  <h2 class="sec">Commits — what moved, where</h2>
+  <p class="sublede">Each commit/PR is tracked against the genome, scanning only the changed files, so you see exactly which modules and functions moved.</p>
+  <div id="clog"></div>
+  <p class="note">Illustrative sample — the renderer derives this from real git history.</p>
+</section>
+
+<section id="drift">
+  <div class="eyebrow">Architecture conformance</div>
+  <h2 class="sec">Drift — code vs the declared genome</h2>
+  <p class="sublede">Because the architecture is the stable spine, the tool can flag where reality diverges from it. On a PR it shows exactly what that change introduced — before it merges.</p>
+  <div id="driftview"></div>
+  <p class="note">Illustrative sample for PR #42 — the renderer computes this from a real scan against the architecture rule.</p>
+</section>
+
+<script>
+const GENOME = {"project":{"name":"Project Helios — Go-to-Market Strategy","kind":"strategy","domain":"document","summary":"The go-to-market plan for Project Helios: who we sell to, how we win, and what it takes to launch.","intent":"One source of truth for the Helios launch. It states the decision, sizes the market, sets positioning and pricing, lays out the execution plan, and names the risks — each section written by a person or drafted by an agent, every claim traceable to a source. A leader can read it top to bottom; the team can drill in.","source":"document","schema":"nexovia/2","status":"in_progress"},"architecture":{"pattern":"outline","description":"Five parts, from why-we're-here to what-could-go-wrong.","layers":{"context":{"order":1,"label":"Context","role":"Why this document exists and what decision it drives.","_ov":[],"_src":"local"},"market":{"order":2,"label":"Market","role":"Customers, size, and the competitive landscape.","_ov":[],"_src":"local"},"strategy":{"order":3,"label":"Strategy","role":"Positioning, the wedge, and pricing.","_ov":[],"_src":"local"},"execution":{"order":4,"label":"Execution","role":"Channels, timeline, and resourcing.","_ov":[],"_src":"local"},"risks":{"order":5,"label":"Risks","role":"What could go wrong, and how we mitigate it.","_ov":[],"_src":"local"}}},"policies":{},"policy_includes":[],"components":{"exec_summary":{"label":"Executive summary","layer":"context","status":"final","owner":"CEO","summary":"Helios targets mid-market ops teams drowning in manual reconciliation; we win on time-to-value and price.","why":"The one section every leader reads — it must stand alone.","key_points":["Beachhead: mid-market ops","Wedge: 1-day setup","Target: $2M ARR in year one"],"sources":["board deck Q2"]},"problem":{"label":"Problem & decision","layer":"context","status":"final","owner":"Product","summary":"Reconciliation is manual, error-prone, and owned by overworked teams. We decide whether to enter now.","why":"Frames the stakes so the rest of the document has a purpose.","key_points":["8 hrs/week wasted per analyst","Errors cost trust with finance"]},"market_sizing":{"label":"Market sizing","layer":"market","status":"final","owner":"Strategy","summary":"TAM ~$4B across mid-market finance ops, growing ~15% a year as tooling consolidates.","why":"Sets the ceiling on the opportunity and justifies the investment.","key_points":["TAM $4B","SAM $900M","~15% CAGR"],"sources":["Gartner 2025","internal survey n=120"]},"competition":{"label":"Competitive landscape","layer":"market","status":"review","owner":"Strategy","summary":"Two incumbents priced for enterprise; a long tail of spreadsheets. We sit between them.","why":"Shows the gap our wedge exploits.","key_points":["Incumbents: slow, expensive","Real competitor is the status quo (Excel)"]},"positioning":{"label":"Positioning & wedge","layer":"strategy","status":"review","owner":"Marketing","summary":"\"Reconciliation done by Friday, not by quarter-end.\" Land on speed, expand to the finance suite.","why":"The promise everything else must support.","key_points":["Speed over breadth","Land-and-expand"]},"pricing":{"label":"Pricing model","layer":"strategy","status":"draft","owner":"Finance","summary":"Per-seat with a usage ceiling; a free tier for one analyst to drive bottoms-up adoption.","why":"Pricing is the strategy made concrete.","key_points":["Free single-seat tier","$40/seat/mo","Annual discount 15%"]},"channels":{"label":"Channels & motion","layer":"execution","status":"draft","owner":"Sales","summary":"Product-led trial funnels into a light-touch sales assist for teams over five seats.","why":"How the strategy actually reaches buyers.","key_points":["PLG trial","Sales-assist > 5 seats"]},"timeline":{"label":"Timeline & resourcing","layer":"execution","status":"planned","owner":"COO","summary":"Private beta in Q3, GA in Q4; needs two AEs and one solutions engineer.","why":"Turns the plan into dates and headcount.","key_points":["Beta Q3","GA Q4","Hire: 2 AE, 1 SE"]},"risks":{"label":"Risks & mitigations","layer":"risks","status":"draft","owner":"CEO","summary":"Incumbent price cut, slow PLG conversion, and integration depth are the top three risks.","why":"Names what could break the plan before it does.","key_points":["Incumbent price war","PLG conversion < 3%","Integration scope creep"]}},"links":[{"from":"positioning","to":"exec_summary","relation":"supports","provenance":{"by":"human","confidence":1.0}},{"from":"market_sizing","to":"positioning","relation":"supports","provenance":{"by":"human","confidence":1.0}},{"from":"competition","to":"positioning","relation":"informs","provenance":{"by":"human","confidence":1.0}},{"from":"pricing","to":"market_sizing","relation":"references","provenance":{"by":"agent","confidence":0.8}},{"from":"channels","to":"pricing","relation":"expands","provenance":{"by":"human","confidence":1.0}},{"from":"timeline","to":"channels","relation":"supports","provenance":{"by":"human","confidence":1.0}},{"from":"risks","to":"pricing","relation":"references","provenance":{"by":"human","confidence":1.0}},{"from":"problem","to":"exec_summary","relation":"supports","provenance":{"by":"human","confidence":1.0}}],"lifecycle":[{"id":"write-exec","kind":"section","title":"Write the executive summary","status":"shipped","priority":"high","components":["exec_summary"],"why":"The section leaders read first."},{"id":"finalize-tam","kind":"research","title":"Finalize market sizing with sources","status":"shipped","priority":"high","components":["market_sizing"],"why":"Numbers must be defensible."},{"id":"competitive","kind":"research","title":"Competitive landscape review","status":"in_progress","priority":"medium","components":["competition"],"why":"Sharpen the wedge against incumbents."},{"id":"pricing-model","kind":"section","title":"Decide and write the pricing model","status":"planned","priority":"high","components":["pricing"],"why":"Pricing gates the whole motion."},{"id":"risk-register","kind":"review","title":"Risk register + mitigations sign-off","status":"proposed","priority":"medium","components":["risks"],"why":"Leadership needs the downside named."}],"commits":[{"hash":"7c1a3f","date":"2026-05-28","msg":"Draft executive summary","components":["exec_summary"],"fns":[]},{"hash":"9b2f0d","date":"2026-05-30","msg":"Finalize market sizing with sources","components":["market_sizing"],"fns":[]},{"hash":"a4d3e1","date":"2026-06-01","msg":"Competitive landscape (in review)","components":["competition"],"fns":[]},{"hash":"e6c8b2","date":"2026-06-02","msg":"Positioning + wedge draft","components":["positioning"],"fns":[]}],"drift":{"pr":17,"rows":[{"sev":"bad","ic":"⛔","msg":"Claim without a source","sub":"“~15% CAGR” in Market sizing has no source link","tag":"unsourced"},{"sev":"warn","ic":"❓","msg":"Reference points to a missing section","sub":"Pricing references a “discount policy” that is not in the outline","tag":"dangling reference"},{"sev":"ok","ic":"○","msg":"4 sections still in draft or planned","sub":"pricing · channels · timeline · risks — not yet final","tag":"unfinished"}]}};
+
+const SAMPLE_COMMITS = [
+  {hash:"a1b2c3d", date:"2026-06-03", msg:"spec: author genome + mock (design-first)", components:["genome_model","render_html"], fns:["Genome","render"]},
+  {hash:"e4f5a6b", date:"2026-06-04", msg:"feat(genome): model + stable-ordered io", components:["genome_model","genome_io"], fns:["read","write","to_toml_stable"]},
+  {hash:"c7d8e9f", date:"2026-06-05", msg:"feat(ingest): deterministic scan + import edges", components:["ingest_scan"], fns:["scan","import_edges","file_symbols"]},
+  {hash:"0a1b2c3", date:"2026-06-06", msg:"feat(track): incremental scan on commit/PR", components:["track","ingest_scan"], fns:["on_pr","changed_files","scan_changed"]},
+  {hash:"4d5e6f7", date:"2026-06-07", msg:"feat(validate): hexagonal dependency rule as a gate", components:["validate"], fns:["enforce_policies","check_integrity"]},
+];
+
+const SAMPLE_DRIFT = {pr:42, rows:[
+  {sev:"bad",  ic:"⛔", msg:"New link breaks the core-independent rule", sub:"genome_merge (execution) → genome_io (persistence) — the core must not depend on an adapter", tag:"rule violation"},
+  {sev:"warn", ic:"❓", msg:"2 files in code are not declared in the genome", sub:"src/util/cache.rs · src/util/time.rs — scanned but absent from genome/nodes.toml", tag:"undeclared"},
+  {sev:"ok",   ic:"○", msg:"9 declared nodes are still planned (not yet built)", sub:"expected for a design-first project — these flip to active as code lands", tag:"unbuilt"},
+]};
+
+const A=GENOME.architecture, P=GENOME.project, N=GENOME.components, L=GENOME.lifecycle;
+const DOMVOCAB={
+ software:{one:'Component',many:'Components',link:'Link',group:'Layer',struct:'Architecture',tech:['functions','libraries']},
+ document:{one:'Section',many:'Sections',link:'Reference',group:'Part',struct:'Outline',tech:[]},
+ database:{one:'Table',many:'Tables',link:'Relationship',group:'Schema',struct:'Schema',tech:['columns','indexes']},
+ workflow:{one:'Step',many:'Steps',link:'Handoff',group:'Stage',struct:'Flow',tech:[]},
+};
+const DOM=DOMVOCAB[P.domain]||{one:'Component',many:'Components',link:'Link',group:'Group',struct:'Structure',tech:[]};
+const COMMITS=GENOME.commits||SAMPLE_COMMITS, DRIFT=GENOME.drift||SAMPLE_DRIFT;
+const DONE=new Set(['active','final','live','done','shipped','published']);
+const CORE=new Set(['label','path','kind','layer','status','summary','why','tags','provenance','_src','_ov']);
+const extraFields=n=>Object.entries(n).filter(([k,v])=>!CORE.has(k)&&v!=null&&!(Array.isArray(v)&&!v.length));
+const detailChips=n=>extraFields(n).map(([k,v])=>{const tech=(DOM.tech||[]).includes(k)?' t-eng':'';const vals=Array.isArray(v)?v.map(x=>`<span class="fn">${x}</span>`).join(' '):`<span class="fn">${v}</span>`;return `<span class="exf${tech}"><span class="exk">${k.replace(/_/g,' ')}</span>${vals}</span>`;}).join(' ')||'<span style="color:var(--faint)">—</span>';
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const PALETTE=['#58a6ff','#3fb950','#d29922','#a371f7','#f0883e','#39c5cf','#db61a2','#c9d1d9'];
+const layerColor=l=>{const v=css('--L-'+l); if(v) return v; const i=ORDER.indexOf(l); return PALETTE[(i<0?0:i)%PALETTE.length];};
+const PROV_LABEL={human:"Human-authored",scan:"Scanned",llm:"LLM-inferred",agent:"Agent-written"};
+const ORDER=Object.entries(A.layers).sort((a,b)=>a[1].order-b[1].order).map(([k])=>k);
+const layerOrder=Object.fromEntries(Object.entries(A.layers).map(([k,v])=>[k,v.order]));
+const modsByLayer={}; Object.entries(N).forEach(([id,n])=>(modsByLayer[n.layer] ??= []).push(id));
+
+/* ---------- hero / architecture / table / policies / commits ---------- */
+hero_eyebrow.textContent=`${P.domain||'project'} genome · ${P.source}-generated · live`;
+hero_tag.textContent=P.summary; hero_intent.textContent=P.intent.trim();
+hero_chips.innerHTML=`<span class="chip">schema ${P.schema}</span><span class="chip">${Object.keys(N).length} ${DOM.many.toLowerCase()}</span><span class="chip">${GENOME.links.length} ${DOM.link.toLowerCase()}s</span><span class="chip">${Object.keys(GENOME.policies).length} policies</span><span class="chip live">live · per commit/PR</span><span class="chip warn">status: ${P.status}</span>`;
+arch_title.textContent=`${DOM.struct}${A.pattern&&A.pattern.toLowerCase()!==DOM.struct.toLowerCase()?" ("+A.pattern+")":""}${A.basis?" — "+A.basis.join(" + "):""}`;
+arch_desc.innerHTML=A.description+(A.extends?`<br><span style="color:var(--faint)">Inherits structure from <a href="${A.extends}" target="_blank" style="color:var(--scan)">${A.extends.split('/').pop()}</a> — the pattern is declared, not imposed: the structure is declared, not imposed — extend a shared one, define your own, or use none.</span>`:'');
+document.getElementById('stack').innerHTML=Object.entries(A.layers).sort((a,b)=>a[1].order-b[1].order)
+  .map(([key,L])=>`<div class="layer" style="--lc:${layerColor(key)}"><div class="lname">${L.label}${L._src==='local'?'<span class="inh" style="color:var(--scan);border-color:#58a6ff55">local</span>':(L._ov&&L._ov.length)?`<span class="ovr" title="overridden locally: ${L._ov.join(', ')}">override</span>`:'<span class="inh">inherited</span>'}<small>${DOM.group.toLowerCase()} ${L.order}${L.twelve_factor?" · <span class=\"t-arch\">"+L.twelve_factor+"</span>":""}</small></div><div class="lrole">${L.role}${L.hexagonal?"<br><span class=\"hex t-arch\">⬡ "+L.hexagonal+"</span>":""}</div><div class="lmods">${(modsByLayer[key]||[]).map(id=>`<span class="modtag" onclick="goNode('${id}')">${N[id].label}</span>`).join('')||'—'}</div></div>`).join('');
+{const r=document.getElementById('rule'); if(A.dependency_rule){r.classList.add('t-arch'); r.innerHTML=`<b>Dependency rule (${A.dependency_rule}):</b> the core never depends outward — outer ${DOM.many.toLowerCase()} reach inward; the validator enforces it.`;} else r.style.display='none';}
+document.getElementById('glegend').innerHTML=ORDER.map(l=>`<span><b style="background:${layerColor(l)}"></b>${A.layers[l].label}</span>`).join('');
+document.querySelector('#modtable tbody').innerHTML=Object.entries(N).sort((a,b)=>((layerOrder[a[1].layer]||0)-(layerOrder[b[1].layer]||0))).map(([id,n])=>`<tr><td><b>${n.label}</b>${n.path?`<div class="path t-eng">${n.path}</div>`:''}</td><td>${n.layer?`<span class="ldot" style="background:${layerColor(n.layer)}"></span>${A.layers[n.layer]?A.layers[n.layer].label:n.layer}`:'—'}</td><td>${detailChips(n)}</td><td><span class="pill">${n.status||'—'}</span></td><td>${provBadge(n.provenance?.summary)}</td></tr>`).join('');
+{ const inc=GENOME.policy_includes||[];
+  const incHtml = inc.length?`<div class="note" style="margin:0 0 12px">Inherited from shared, centrally-maintained sets: ${inc.map(f=>`<span class="fn">${f}</span>`).join(' ')}</div>`:'';
+  const srcBadge=p=>({
+    inherited:'<span class="inh">inherited</span>',
+    override:`<span class="ovr" title="overridden locally: ${(p._ov||[]).join(', ')}">override</span>`,
+    local:'<span class="inh" style="color:var(--scan);border-color:#58a6ff55">local</span>',
+  }[p._src||'local']);
+  document.getElementById('pols').innerHTML = incHtml + Object.entries(GENOME.policies).map(([name,p])=>`
+    <div class="policy ${p.enforcement}">
+      <div class="ph">
+        <span class="pn">${name}${srcBadge(p)}${p.ref?` <a href="${p.ref}" target="_blank" style="color:var(--scan);font-weight:400;font-size:11px">↗ ref</a>`:''}</span>
+        <span class="enf ${p.enforcement}">${p.enforcement}</span>
+      </div>
+      ${p.statement?`<div class="ps">${p.statement}</div>`:''}
+      ${p.ref?`<div class="pw"><b style="color:var(--faint)">Source:</b> <a href="${p.ref}" target="_blank" style="color:var(--scan)">${p.ref}</a></div>`:''}
+      ${p.why?`<div class="pw"><b style="color:var(--faint)">Why:</b> ${p.why}</div>`:''}
+      <div style="margin-top:8px">${(p.scope||[]).map(s=>`<span class="pill">${s}</span>`).join('')}</div>
+    </div>`).join('');
+}
+document.getElementById('clog').innerHTML=COMMITS.map(c=>`<div class="commit"><div><div class="hash">${c.hash}</div><div class="date">${c.date}</div></div><div><div class="msg">${c.msg}</div><div class="touch">${c.components.map(id=>`<span class="pill" style="border-color:${layerColor(N[id]?.layer)};color:${layerColor(N[id]?.layer)}" onclick="goNode('${id}')">${N[id]?.label||id}</span>`).join('')} ${c.fns.map(f=>`<span class="fn" style="margin-top:0">${f}</span>`).join(' ')}</div></div></div>`).join('');
+
+// completion — designed (spec) / built (code) / shipped (lifecycle)
+{ const tot=Object.keys(N).length;
+  const built=Object.values(N).filter(n=>DONE.has(n.status)).length;
+  const designed=Object.values(N).filter(n=>n.summary&&n.why&&n.provenance&&n.provenance.summary&&n.provenance.why).length;
+  const shipped=L.filter(i=>i.status==='shipped').length;
+  const meter=(lab,done,t,col)=>{const p=t?Math.round(done/t*100):0;return `<div class="meter"><div class="ml"><span>${lab}</span><b>${p}% · ${done}/${t}</b></div><div class="bar"><i style="width:${p}%;background:${col}"></i></div></div>`;};
+  document.getElementById('completion').innerHTML=meter('Designed',designed,tot,'var(--human)')+meter('Built',built,tot,'var(--scan)')+meter('Shipped',shipped,L.length,'var(--llm)');
+}
+
+// lifecycle board
+{ const STAGES=['proposed','planned','in_progress','shipped','deprecated'];
+  const KC={feature:'#58a6ff',enhancement:'#3fb950',bug:'#f85149',chore:'#8b98a8',spike:'#8b98a8'};
+  document.getElementById('board').innerHTML=STAGES.map(st=>{
+    const items=L.filter(i=>i.status===st);
+    return `<div class="col"><h4>${st.replace('_',' ')}<span>${items.length}</span></h4>${items.map(i=>`
+      <div class="item" style="--kc:${KC[i.kind]||'#888'}" onclick="goNode('${(i.components||[])[0]||''}')">
+        <div class="it">${i.title}</div>
+        <div class="im"><span class="kind ${i.kind}">${i.kind}</span><span class="prio">${i.priority||''}</span></div>
+        <div class="im">${(i.components||[]).map(id=>`<span class="mn">${N[id]?N[id].label:id}</span>`).join(' · ')}</div>
+      </div>`).join('')||'<div style="color:var(--faint);font-size:11px">—</div>'}</div>`;
+  }).join('');
+}
+
+// drift
+document.getElementById('driftview').innerHTML=
+  `<div class="note" style="margin:0 0 12px">Showing drift introduced by <b style="color:var(--ink)">PR #${DRIFT.pr}</b>.</div>`+
+  DRIFT.rows.map(r=>`<div class="drow ${r.sev}"><div class="dic">${r.ic}</div><div class="dmsg">${r.msg}<small>${r.sub}</small></div><div class="dtag">${r.tag}</div></div>`).join('');
+
+function provBadge(p){const by=p?.by||'human',conf=p?.confidence??1,col=`var(--${by})`;const meta=(by==='llm'||by==='scan')?` · ${Math.round(conf*100)}%`:'';return `<span class="prov ${by}"><span class="dot"></span>${PROV_LABEL[by]}${meta}</span>`+((by==='llm'||by==='scan')?`<div class="conf"><i style="width:${conf*100}%;background:${col}"></i></div>`:'');}
+function field(k,v,prov){return `<div class="field"><div class="k">${k}</div><div class="v">${v||'<i>— empty, awaiting enrichment —</i>'}</div>${provBadge(prov)}</div>`;}
+function showDetail(id){
+  const n=N[id];if(!n)return;const c=layerColor(n.layer);
+  const rel=GENOME.links.filter(e=>e.from===id||e.to===id).map(e=>e.from===id?`→ ${e.relation} <b>${N[e.to].label}</b>`:`← ${N[e.from].label} ${e.relation}`).map(s=>`<div class="pill">${s}</div>`).join('');
+  detail.innerHTML=`<div class="dt">${n.label}</div>${n.path?`<div class="dp t-eng">${n.path}</div>`:''}<div style="margin:7px 0"><span class="pill" style="border-color:${c};color:${c}">${n.layer&&A.layers[n.layer]?A.layers[n.layer].label:(n.layer||DOM.one)}</span>${n.kind?`<span class="pill">${n.kind}</span>`:''}<span class="pill">${n.status||''}</span></div><div class="dgrid"><div>${field('Summary',n.summary,n.provenance?.summary)}${field('Why',n.why,n.provenance?.why)}</div><div>${extraFields(n).map(([k,v])=>{const tech=(DOM.tech||[]).includes(k)?' t-eng':'';const vals=Array.isArray(v)?v.map(x=>`<span class="fn">${x}</span>`).join(' '):v;return `<div class="field${tech}"><div class="k">${k.replace(/_/g,' ')}</div><div class="v">${vals}</div></div>`;}).join('')}<div class="field t-arch"><div class="k">Dependencies &amp; ${DOM.link.toLowerCase()}s</div><div class="v">${rel}</div></div></div></div>`;
+}
+
+/* ====================== INTERACTIVE GRAPH ====================== */
+const GV = {
+  mode:'topology', expand:new Set(), sel:null,
+  t:{x:0,y:0,k:1}, components:[], links:[], map:{}, pos:{}, ticks:0, raf:null,
+  W:0, H:540,
+  build(){
+    const ns=[], ls=[], map={};
+    const add=n=>{ if(GV.pos[n.id]){n.x=GV.pos[n.id].x;n.y=GV.pos[n.id].y;} ns.push(n); map[n.id]=n; return n; };
+    if(GV.mode==='hierarchy'){
+      const root=add({id:'__root',type:'root',label:P.name});
+      ORDER.forEach(l=>{ const mods=modsByLayer[l]; if(!mods||!mods.length)return;
+        const ln=add({id:'__L_'+l,type:'layer',layer:l,label:A.layers[l].label});
+        ls.push({s:'__root',t:ln.id,kind:'tree'});
+        mods.forEach(mid=>{ const mn=add({id:mid,type:'module',...N[mid]}); ls.push({s:ln.id,t:mid,kind:'tree'});
+          if(GV.expand.has(mid)) N[mid].functions.forEach(fn=>{ add({id:mid+'#'+fn,type:'fn',layer:N[mid].layer,label:fn,parentId:mid}); ls.push({s:mid,t:mid+'#'+fn,kind:'fn'}); });
+        });
+      });
+    } else {
+      Object.keys(N).forEach(mid=>add({id:mid,type:'module',...N[mid]}));
+      GENOME.links.forEach(e=>ls.push({s:e.from,t:e.to,kind:'dep',relation:e.relation}));
+      Object.keys(N).forEach(mid=>{ if(GV.expand.has(mid)) N[mid].functions.forEach(fn=>{ add({id:mid+'#'+fn,type:'fn',layer:N[mid].layer,label:fn,parentId:mid}); ls.push({s:mid,t:mid+'#'+fn,kind:'fn'}); }); });
+    }
+    GV.nodes=ns; GV.links=ls; GV.map=map;
+    // init any missing positions
+    ns.forEach(n=>{ if(n.x==null){ const ci=ORDER.indexOf(n.layer); n.x=140+(ci<0?2:ci)*210+(Math.random()*40-20); n.y=120+(Math.random()*260); } n.vx=n.vx||0; n.vy=n.vy||0; });
+    if(GV.mode==='hierarchy'){ GV.layoutTree(); GV.ticks=0; } else { GV.ticks=240; GV.run(); }
+    GV.savePos();
+  },
+  layoutTree(){
+    const vGap=120, hGap=92; let leaf=0;
+    const place=(id,depth)=>{ const n=GV.map[id]; n.depth=depth;
+      const kids=GV.links.filter(l=>l.s===id).map(l=>l.t);
+      if(kids.length){ kids.forEach(k=>place(k,depth+1)); n.x=(GV.map[kids[0]].x+GV.map[kids[kids.length-1]].x)/2; }
+      else { n.x=leaf*hGap; leaf++; }
+      n.y=depth*vGap+40;
+    };
+    place('__root',0);
+    GV.savePos();
+  },
+  run(){ cancelAnimationFrame(GV.raf); const loop=()=>{ if(GV.ticks>0){ GV.sim(); GV.draw(); GV.ticks--; GV.raf=requestAnimationFrame(loop);} }; GV.raf=requestAnimationFrame(loop); },
+  sim(){
+    const ns=GV.nodes, CY=GV.H/2;
+    for(let i=0;i<ns.length;i++)for(let j=i+1;j<ns.length;j++){ const a=ns[i],b=ns[j];
+      let dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy||0.01,d=Math.sqrt(d2),rep=(a.type==='fn'||b.type==='fn'?900:2600)/d2,fx=dx/d*rep,fy=dy/d*rep;
+      a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy; }
+    GV.links.forEach(l=>{ const a=GV.map[l.s],b=GV.map[l.t]; if(!a||!b)return;
+      const L=l.kind==='fn'?64:155; let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||0.01,f=(d-L)*0.04,fx=dx/d*f,fy=dy/d*f;
+      a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy; });
+    ns.forEach(n=>{ if(n.type==='module'){ const ci=ORDER.indexOf(n.layer); n.vx+=(140+ci*210 - n.x)*0.018; } n.vy+=(CY-n.y)*0.004;
+      if(n.pin)return; n.x+=Math.max(-12,Math.min(12,n.vx)); n.y+=Math.max(-12,Math.min(12,n.vy)); n.vx*=0.8; n.vy*=0.8; });
+    GV.savePos();
+  },
+  savePos(){ GV.nodes.forEach(n=>GV.pos[n.id]={x:n.x,y:n.y}); },
+  fit(){ const xs=GV.nodes.map(n=>n.x),ys=GV.nodes.map(n=>n.y); if(!xs.length)return;
+    const minx=Math.min(...xs)-90,maxx=Math.max(...xs)+90,miny=Math.min(...ys)-50,maxy=Math.max(...ys)+60;
+    const host=document.getElementById('graph-host'),w=host.clientWidth,h=host.clientHeight;
+    const k=Math.min(w/(maxx-minx),h/(maxy-miny),1.4); GV.t.k=k; GV.t.x=(w-(minx+maxx)*k)/2; GV.t.y=(h-(miny+maxy)*k)/2; GV.draw(); },
+  draw(){
+    const v=document.getElementById('gview'); v.setAttribute('transform',`translate(${GV.t.x},${GV.t.y}) scale(${GV.t.k})`);
+    const sel=GV.sel, conn=new Set(); if(sel){ conn.add(sel); GV.links.forEach(l=>{ if(l.s===sel)conn.add(l.t); if(l.t===sel)conn.add(l.s); }); }
+    let h='';
+    GV.links.forEach(l=>{ const a=GV.map[l.s],b=GV.map[l.t]; if(!a||!b)return;
+      const hot=sel&&(l.s===sel||l.t===sel); const mx=(a.x+b.x)/2;
+      const d=GV.mode==='hierarchy'?`M${a.x} ${a.y+14} C ${a.x} ${(a.y+b.y)/2}, ${b.x} ${(a.y+b.y)/2}, ${b.x} ${b.y-14}`:`M${a.x} ${a.y} C ${mx} ${a.y}, ${mx} ${b.y}, ${b.x} ${b.y}`;
+      h+=`<path class="lnk ${l.kind}${hot?' hot':''}" d="${d}"/>`; });
+    GV.nodes.forEach(n=>{ const c=n.layer?layerColor(n.layer):'#8b98a8'; const dim=sel&&!conn.has(n.id)?' dim':''; const isSel=n.id===sel?' sel':'';
+      if(n.type==='fn'){ const w=Math.max(38,n.label.length*6.2+14);
+        h+=`<g class="gn fn${dim}" data-id="${n.id}" data-parent="${n.parentId}" transform="translate(${n.x},${n.y})"><rect x="${-w/2}" y="-11" width="${w}" height="22" rx="11" fill="${c}1a" stroke="${c}99"/><text class="t" x="0" y="3.5" text-anchor="middle">${n.label}</text></g>`;
+      } else if(n.type==='layer'){ const w=Math.max(96,n.label.length*8+24);
+        h+=`<g class="gn layer" data-id="${n.id}" transform="translate(${n.x},${n.y})"><rect x="${-w/2}" y="-14" width="${w}" height="28" rx="14" fill="${c}33" stroke="${c}"/><text class="t" x="0" y="4" text-anchor="middle">${n.label}</text></g>`;
+      } else if(n.type==='root'){ const w=Math.max(90,n.label.length*9+24);
+        h+=`<g class="gn root" data-id="${n.id}" transform="translate(${n.x},${n.y})"><rect x="${-w/2}" y="-16" width="${w}" height="32" rx="9" fill="#1d2740" stroke="${css('--accent')}"/><text class="t" x="0" y="5" text-anchor="middle">${n.label}</text></g>`;
+      } else { const w=156,hh=46;
+        h+=`<g class="gn module ${n.status==='planned'?'planned':''}${dim}${isSel}" data-id="${n.id}" transform="translate(${n.x},${n.y})"><rect x="${-w/2}" y="${-hh/2}" width="${w}" height="${hh}" rx="8" fill="${c}22" stroke="${c}"/><text class="t" x="${-w/2+11}" y="-2">${n.label}</text><text class="s" x="${-w/2+11}" y="13">${n.path||n.kind||''}</text></g>`;
+      }
+    });
+    v.innerHTML=h;
+  }
+};
+const gsvg=document.getElementById('gsvg');
+GV.W=document.getElementById('graph-host').clientWidth;
+
+// interactions
+let drag=null;
+gsvg.addEventListener('pointerdown',ev=>{ const g=ev.target.closest('.gn'); const pt=svgPt(ev);
+  if(g && g.classList.contains('module')){ const n=GV.map[g.dataset.id]; drag={node:n,ox:pt.x-n.x,oy:pt.y-n.y}; n.pin=true; gsvg.setPointerCapture(ev.pointerId); }
+  else if(g && g.classList.contains('fn')){ /* handled on click */ }
+  else { drag={pan:true,sx:ev.clientX,sy:ev.clientY,tx:GV.t.x,ty:GV.t.y}; gsvg.classList.add('grab'); }
+});
+gsvg.addEventListener('pointermove',ev=>{ if(!drag)return;
+  if(drag.pan){ GV.t.x=drag.tx+(ev.clientX-drag.sx); GV.t.y=drag.ty+(ev.clientY-drag.sy); GV.draw(); }
+  else { const pt=svgPt(ev); drag.node.x=pt.x-drag.ox; drag.node.y=pt.y-drag.oy; GV.savePos(); GV.draw(); }
+});
+gsvg.addEventListener('pointerup',ev=>{ if(drag&&drag.node){ drag.node.pin=false; if(GV.mode==='topology'){GV.ticks=80;GV.run();} } drag=null; gsvg.classList.remove('grab'); });
+gsvg.addEventListener('click',ev=>{ const g=ev.target.closest('.gn'); if(!g)return;
+  const id=g.dataset.id;
+  if(g.classList.contains('fn')){ GV.sel=g.dataset.parent; showDetail(g.dataset.parent); GV.draw(); return; }
+  if(g.classList.contains('module')){ GV.sel=id; showDetail(id); GV.draw(); }
+});
+gsvg.addEventListener('dblclick',ev=>{ const g=ev.target.closest('.gn'); if(!g||!g.classList.contains('module'))return;
+  const id=g.dataset.id; if(GV.expand.has(id))GV.expand.delete(id); else GV.expand.add(id); GV.build(); GV.draw(); });
+gsvg.addEventListener('wheel',ev=>{ ev.preventDefault(); const r=gsvg.getBoundingClientRect(); const px=ev.clientX-r.left,py=ev.clientY-r.top; const f=ev.deltaY<0?1.12:0.89;
+  const k2=Math.max(0.3,Math.min(2.6,GV.t.k*f)); const wx=(px-GV.t.x)/GV.t.k, wy=(py-GV.t.y)/GV.t.k;
+  GV.t.k=k2; GV.t.x=px-wx*k2; GV.t.y=py-wy*k2; GV.draw(); },{passive:false});
+function svgPt(ev){ const r=gsvg.getBoundingClientRect(); return {x:(ev.clientX-r.left-GV.t.x)/GV.t.k, y:(ev.clientY-r.top-GV.t.y)/GV.t.k}; }
+
+function setMode(m){ GV.mode=m; b_topology.classList.toggle('on',m==='topology'); b_hierarchy.classList.toggle('on',m==='hierarchy');
+  GV.pos={}; GV.build(); GV.fit(); }
+b_topology.onclick=()=>setMode('topology');
+b_hierarchy.onclick=()=>setMode('hierarchy');
+b_funcs.onclick=()=>{ const allOn=Object.keys(N).every(id=>GV.expand.has(id)); GV.expand=allOn?new Set():new Set(Object.keys(N));
+  b_funcs.classList.toggle('on',!allOn); GV.pos={}; GV.build(); GV.fit(); };
+b_reset.onclick=()=>{ GV.pos={}; GV.build(); GV.fit(); };
+function goNode(id,expand){ document.getElementById('graph').scrollIntoView({block:'start'}); if(expand){GV.expand.add(id);GV.build();}
+  GV.sel=id; showDetail(id); GV.draw(); }
+
+// boot graph
+(function(){
+  const D=GENOME.delivery, DP=GENOME.deployment, Q=GENOME.quality, sec=document.getElementById('delivery');
+  const has=o=>o&&Object.keys(o).length;
+  if(!has(D)&&!has(DP)&&!has(Q)){ if(sec) sec.style.display='none'; return; }
+  const money=(n,c)=>`${c||'$'} ${Math.round(n).toLocaleString()}`;
+  const trust=(by,conf)=> by==='human'?'<span class="prov human"><span class="dot"></span>commitment</span>'
+    : by==='measured'?'<span class="prov scan"><span class="dot"></span>measured</span>'
+    : `<span class="prov llm"><span class="dot"></span>estimate · ${Math.round((conf||0.5)*100)}%</span>`;
+  let html='';
+  if(has(D)&&(D.estimates||[]).length){
+    const hrs=D.estimates.reduce((s,e)=>s+(e.hours||0),0), cost=hrs*(D.blended_rate||0);
+    html+=`<div class="panel"><h3>Delivery & cost</h3><div class="big">${hrs} hrs · ${money(cost,D.currency)}</div>`+
+      `<div class="muted">${(D.team||[]).join(' · ')} @ ${D.currency||'$'}${D.blended_rate}/hr</div>`+
+      `<table class="mini">${D.estimates.map(e=>`<tr><td>${e.title||e.item}</td><td>${e.hours}h</td><td>${money(e.hours*(D.blended_rate||0),D.currency)}</td><td>${trust(e.by,e.confidence)}</td></tr>`).join('')}</table></div>`;
+  }
+  if(has(DP)){
+    html+=`<div class="panel"><h3>Deployment</h3><div class="big">${DP.type||''}</div><div class="muted">${DP.model||''}</div><p class="ps">${DP.summary||''}</p>`+
+      (DP.targets?`<div class="kv"><span>Targets</span> ${DP.targets.map(x=>`<span class="pill">${x}</span>`).join('')}</div>`:'')+
+      (DP.artifacts?`<div class="kv"><span>Artifacts</span> ${DP.artifacts.map(x=>`<span class="fn">${x}</span>`).join(' ')}</div>`:'')+
+      (DP.runtime?`<div class="kv"><span>Runtime</span> ${DP.runtime}</div>`:'')+
+      `<div style="margin-top:8px">${trust(DP.provenance?DP.provenance.by:'human',DP.provenance?DP.provenance.confidence:1)}</div></div>`;
+  }
+  if(has(Q)){
+    html+=`<div class="panel"><h3>Quality — budgets & gates</h3>`+
+      (Q.budgets||[]).map(b=>`<div class="kv"><span>${b.metric}</span> <b>${b.target}</b> <span class="muted">now: ${b.current||'—'}</span> ${trust(b.by,b.confidence)}</div>`).join('')+
+      `<div class="t-arch" style="margin-top:8px">`+(Q.gates||[]).map(g=>`<div class="kv gate"><span class="pill">${g.status||'planned'}</span> <b>${g.name}</b><br><span class="muted">${g.rule}</span></div>`).join('')+`</div></div>`;
+  }
+  document.getElementById('planwrap').innerHTML=html;
+})();
+nav_comp.textContent=DOM.many; mod_h.textContent=DOM.many; th_one.textContent=DOM.one; th_grp.textContent=DOM.group;
+function setView(v){document.body.className='view-'+v; v_exec.classList.toggle('on',v==='exec'); v_arch.classList.toggle('on',v==='arch'); v_eng.classList.toggle('on',v==='eng');}
+v_exec.onclick=()=>setView('exec'); v_arch.onclick=()=>setView('arch'); v_eng.onclick=()=>setView('eng');
+setView((P.domain==='document'||P.domain==='workflow')?'exec':'arch');
+GV.build(); GV.fit(); {const f0=Object.keys(N)[0]; GV.sel=f0; showDetail(f0);} GV.draw();
+window.addEventListener('resize',()=>GV.draw());
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+# genome/quality.toml — performance budgets and QA gates (a planning facet).
+#
+# Referenced from nexovia.toml [include].quality. Budgets have a target (declared)
+# and a current (measured later, by=measured — empty until CI fills it). Gates are
+# the QA checks the build must pass; they mirror the verification in the plan.
+
+[quality]
+summary = "Performance budgets and QA gates the build must hold (per the efficiency + reliability policies)."
+
+[[budget]]
+metric  = "Binary size (default features)"
+target  = "≤ 2.5 MB"
+current = "not measured"
+by = "human"
+confidence = 1.0
+
+[[budget]]
+metric  = "Scan 10,000 files"
+target  = "≤ 1.5 s"
+current = "not measured"
+by = "human"
+confidence = 0.65
+
+[[budget]]
+metric  = "Render genome → HTML"
+target  = "≤ 200 ms"
+current = "not measured"
+by = "human"
+confidence = 0.7
+
+[[gate]]
+name   = "Unit tests — deterministic core"
+rule   = "core (genome io/merge, ingest, render, validate) fully covered"
+status = "planned"
+
+[[gate]]
+name   = "Render fidelity"
+rule   = "nexovia render <fixture> byte-equals fixtures/*.html"
+status = "planned"
+
+[[gate]]
+name   = "Provenance round-trip"
+rule   = "a by=human field survives a re-scan (merge never clobbers it)"
+status = "planned"
+
+[[gate]]
+name   = "No network on default build"
+rule   = "default-feature dependency graph contains no http/LLM client"
+status = "planned"

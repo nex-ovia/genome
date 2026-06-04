@@ -1,0 +1,24 @@
+# org/coding-standards.toml — shared coding standards & security guardrails.
+#
+# Centrally owned, like org/nxs-topology.toml. Projects pull these in via
+# [policies].include and override only what they need. Each top-level table is
+# one policy. Edit here to change the standard across every repo at once.
+
+[readability]
+statement   = "Each module owns one job and reads like its neighbors — match comment density, naming, and idiom. Target under 120 lines per source file; hard cap 200."
+why         = "Small units keep complexity low and review cheap. This is the org baseline; projects may tighten it."
+scope       = ["*"]
+enforcement = "advisory"
+
+[security]
+ref         = "https://github.com/nex-ovia/guardrails/blob/main/SECURITY.md"
+statement   = "No secrets in source or logs; dependencies pinned and audited; no network access on a default build."
+why         = "Security rules are org-wide and centrally owned, so every repo enforces the same guardrails and an update propagates everywhere at once."
+scope       = ["*"]
+enforcement = "validated"
+
+[testing]
+statement   = "Public behavior is covered by tests; every bug fix lands with a regression test."
+why         = "Shared baseline so quality does not depend on which team wrote the code."
+scope       = ["*"]
+enforcement = "advisory"

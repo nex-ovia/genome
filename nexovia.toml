@@ -1,0 +1,65 @@
+# nexovia.toml — the genome of nexovia itself.
+#
+# DESIGN-FIRST: authored from a prompt before any v2 code exists
+# (source = "prompt", every node status = "planned"). It is both the
+# specification for the tool AND the first dogfood — the renderer in Phase 1
+# must reproduce mock/report.html from exactly this file.
+#
+# Every semantic field carries provenance. Here everything is by = "human"
+# because a person hand-wrote it. When the tool later fills a field it stamps
+# by = "llm" or by = "scan" with a confidence, and merge must never overwrite a
+# human-authored field with a machine guess.
+
+[project]
+name    = "nexovia"
+kind    = "cli"
+domain  = "software"
+summary = "One file is your project's genome — a single, version-controlled source of truth for the whole project."
+intent  = """
+nexovia keeps one editable nexovia.toml that describes a project end to end: its
+architecture, every module/file with the functions and libraries it uses, the
+rationale behind each part, and the policies that keep the code efficient,
+reliable, and readable. The same file is generated from code, a document, or a
+prompt; rendered to a self-contained HTML map for humans; and read/written by
+coding agents. It is a live tool, not a one-shot snapshot: on every commit and
+PR it scans only what changed, updates the genome incrementally, and regenerates
+the HTML so human understanding never drifts from the code.
+Deterministic where it can be, honest about what it inferred.
+The scanner and AI agents are the default authors; a human edits it only to set a guardrail or correction — which is sticky and never overwritten.
+"""
+source     = "prompt"
+schema     = "nexovia/2"
+status     = "planned"
+repository = "https://github.com/nex-ovia/nexovia"
+languages  = {}            # design-first: no code written yet
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Architecture — the design pattern, DECLARED in the genome (never hardcoded in
+# the tool). Hybrid model: inherit the canonical NXS topology from a shared file
+# via `extends`, then override ONLY what this project changes. Nothing is
+# repeated; the resolved view = base ⊕ overrides. A different project could
+# extend a different topology, define its own layers inline, or none at all.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[architecture]
+extends = "org/nxs-topology.toml"   # base: pattern, basis, dependency_rule, all five layers
+fluid   = true                      # the pattern is declared, not imposed
+
+[architecture.layers.surface]
+# Local override of exactly one field — every other layer is inherited untouched.
+role = "Gateways for nexovia: the self-contained HTML report, the MCP agent server, and document/prompt intake."
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Composition — the architecture above is the stable spine and should rarely
+# change. Everything that moves as the project evolves is referenced here and
+# resolved into one view. Add your own references: anything that resolves to
+# components/links or policies composes in, including things this project never imagined.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[include]
+components = ["project/components.toml"]                        # the project parts + links (scanned, volatile)
+policies  = ["org/coding-standards.toml", "project/policies.toml"]  # shared bases first, local last
+lifecycle = ["project/lifecycle.toml"]                          # features, enhancements, bugs
+delivery   = ["project/delivery.toml"]                         # estimates, resourcing, cost
+deployment = ["project/deployment.toml"]                       # how it ships
+quality    = ["project/quality.toml"]                          # perf budgets + QA gates

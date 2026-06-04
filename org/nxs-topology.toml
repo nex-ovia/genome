@@ -1,0 +1,46 @@
+# org/nxs-topology.toml — the canonical NXS topology.
+#
+# Shared, centrally owned. Projects inherit this via [architecture].extends and
+# override only what they need. Edit here to change the standard everywhere at once.
+# NXS = hexagonal (ports & adapters) + 12-factor, with the core-independent rule.
+
+schema          = "nexovia-topology/1"
+pattern         = "NXS"
+basis           = ["hexagonal (ports & adapters)", "12-factor app"]
+dependency_rule = "core-independent"
+description     = "Ports-and-adapters core wrapped in 12-factor operational discipline. The domain (execution) is pure and knows nothing of the outside; adapters reach inward."
+
+[layers.governance]
+order         = 1
+label         = "Governance"
+role          = "Policies, schema, manifests, SOPs — the rules the system obeys."
+hexagonal     = "Not an actor: the constraints the hexagon is built to honor."
+twelve_factor = "III Config · X Dev/prod parity"
+
+[layers.orchestration]
+order         = 2
+label         = "Orchestration"
+role          = "Entrypoints and use-case wiring. Owns no business logic."
+hexagonal     = "Application layer — drives the core through its ports."
+twelve_factor = "I Codebase · XII Admin processes"
+
+[layers.execution]
+order         = 3
+label         = "Execution (core)"
+role          = "Domain types, rules, and invariants. Pure, no I/O."
+hexagonal     = "The hexagon center — depends on nothing outward."
+twelve_factor = "VI Stateless processes"
+
+[layers.persistence]
+order         = 4
+label         = "Persistence"
+role          = "Driven adapters: file I/O, serialization, external services."
+hexagonal     = "Outbound/driven adapters the core calls through ports."
+twelve_factor = "IV Backing services"
+
+[layers.surface]
+order         = 5
+label         = "Surface"
+role          = "Gateways at the boundary: rendered output, agent protocol, doc intake."
+hexagonal     = "Driving/inbound adapters that translate the outside world in/out."
+twelve_factor = "VII Port binding"

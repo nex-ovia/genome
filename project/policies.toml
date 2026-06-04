@@ -1,0 +1,34 @@
+# genome/policies.toml — this project's own policies (the volatile, tweakable set).
+# Referenced from nexovia.toml [include].policies and resolved on top of the shared
+# org bases. A policy whose name also exists in a base file is an OVERRIDE; a new
+# name here is LOCAL. Top-level tables are policies (same shape as the org files).
+
+[design]
+statement   = "Every node declares its NXS layer, and dependencies point inward: the execution core must never depend on persistence or surface. Adapters reach in; the core stays pure."
+why         = "This is the hexagonal invariant. Enforcing it keeps the domain testable in isolation and lets adapters change without touching business rules — the whole point of the topology."
+scope       = ["*"]
+enforcement = "validated"   # validate fails on any execution → persistence/surface edge
+
+[efficiency]
+statement   = "The default binary is network-free and small (opt-level=\"z\", lto, strip). The LLM client and MCP server live behind cargo features so the core never pays for optional intelligence."
+why         = "The promise is the smallest intelligent binary. Optional capability must not bloat the default path, and the deterministic core must run anywhere with no network."
+scope       = ["enrich_llm", "agent_mcp"]
+enforcement = "validated"   # validate fails if a default-feature dep pulls in a network/LLM client
+
+[reliability]
+statement   = "The deterministic core (genome io/merge, ingest, render, validate) is fully unit-tested. Merge must never clobber a field whose provenance is by=human or by=agent."
+why         = "Trust in the genome depends on human and agent edits surviving every re-scan. A tool that silently overwrites your edits is worse than no tool."
+scope       = ["genome_merge", "ingest_scan", "ingest_doc"]
+enforcement = "validated"   # validate fails if a re-run would overwrite a sticky field
+
+[readability]
+# Override of the inherited org default (200) — nexovia tightens to a stricter cap.
+# Only the changed fields are written; scope + enforcement are inherited from the base.
+statement = "Each module owns one job and reads like its neighbors — match comment density, naming, and idiom. Target under 100 lines per source file; hard cap 150. Past that, split."
+why       = "A 200-line file tends to smuggle a second responsibility across a layer line; tighter units keep the hexagonal boundaries clean and the genome legible to humans and agents."
+
+[honesty]
+statement   = "Never write a semantic field (summary, why, inferred edge) without provenance. Machine output carries by=llm|scan and a confidence; anything unresolved is surfaced by validate, never silently dropped or faked."
+why         = "This is the differentiator over every scanner and over the old nexovia, which faked understanding with templated [nexovia:auto] boilerplate. Honesty is the product."
+scope       = ["enrich_llm", "validate", "ingest_scan", "ingest_doc"]
+enforcement = "validated"   # validate fails on a semantic field missing a provenance entry

@@ -1,0 +1,13 @@
+# genome/deployment.toml — how the project ships (a planning facet).
+#
+# Referenced from nexovia.toml [include].deployment. Part scannable (Dockerfile,
+# CI, artifacts), part declared intent. type ∈ saas | cloud-native | container | binary.
+
+[deployment]
+type       = "binary (+ optional container)"
+model      = "self-hosted / local-first"
+summary    = "Ships as one small static binary that runs anywhere with no runtime. The optional MCP server can run as a container app. No SaaS; no network on the default build."
+targets    = ["macOS arm64", "macOS x86_64", "Linux x86_64", "Windows x86_64"]
+artifacts  = ["nexovia (static binary, ~2 MB)", "Dockerfile (MCP server — optional)"]
+runtime    = "none for the core; network only with the enrich/agent cargo features"
+provenance = { by = "human", confidence = 1.0 }
