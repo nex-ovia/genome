@@ -1,0 +1,18 @@
+# genome dev image — build/test/benchmark the `genome` binary in-container.
+# No local Rust toolchain is needed on the host (podman/docker only).
+FROM docker.io/library/rust:1-slim
+
+# musl for a small static release binary (deployment target); tools for the gates.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends musl-tools git ca-certificates curl pkg-config \
+ && rm -rf /var/lib/apt/lists/* \
+ && rustup target add x86_64-unknown-linux-musl
+
+# Gate tooling: nextest (tests), cargo-bloat + cargo-tree (size/dep-graph), hyperfine (bench).
+# nextest ships a prebuilt binary — far faster than compiling.
+RUN curl -fsSL https://get.nexte.st/latest/linux | tar -xz -C /usr/local/cargo/bin \
+ && cargo install cargo-bloat --locked || true
+RUN apt-get update && apt-get install -y --no-install-recommends hyperfine || true \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /work

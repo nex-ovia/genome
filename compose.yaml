@@ -1,0 +1,21 @@
+# Containerized dev for genome. Usage:
+#   podman compose run --rm dev cargo build
+#   podman compose run --rm dev cargo nextest run
+#   podman compose run --rm dev cargo run --bin genome -- render nexovia.toml
+# Named volumes cache the cargo registry and target dir across runs.
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /work
+    volumes:
+      - .:/work:z
+      - genome-cargo-registry:/usr/local/cargo/registry
+      - genome-target:/work/target
+    environment:
+      CARGO_TERM_COLOR: always
+
+volumes:
+  genome-cargo-registry:
+  genome-target:

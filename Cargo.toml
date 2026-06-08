@@ -1,0 +1,26 @@
+[package]
+name = "nexovia"
+version = "0.1.0"
+edition = "2021"
+description = "One file is your project's genome — a config-driven comprehension + approval window."
+repository = "https://github.com/nex-ovia/nexovia"
+
+# Brand is nexovia; the binary is `genome`.
+[[bin]]
+name = "genome"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+toml = { version = "0.8", features = ["preserve_order"] }
+
+[features]
+default = []
+# Optional capability stays off the default path (efficiency policy):
+enrich = []   # embedded GGUF inference (added in a later step)
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true

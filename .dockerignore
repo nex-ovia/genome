@@ -1,0 +1,5 @@
+target/
+.git/
+**/*.html
+!mock/report.html
+!examples/**/report.html
