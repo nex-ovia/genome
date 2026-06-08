@@ -21,3 +21,11 @@ decision = "pending"
 note     = "Awaiting the full offline loop (enrich + ask/approve) before signing off on the snapshot."
 by       = "human"
 at       = "2026-06-08"
+
+[[approval]]
+target   = "genome_io"
+role     = "arch"
+decision = "approved"
+note     = "stable TOML output looks right"
+by       = "human"
+at       = "2026-06-08"

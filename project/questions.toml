@@ -33,3 +33,21 @@ status = "answered"
 answer = "Document → genome → offline-enriched HTML → ask/approve, entirely offline. That is exactly the MVP loop (feat-loop)."
 by     = "human"
 at     = "2026-06-08"
+
+[[question]]
+id     = "q4"
+target = "render_html"
+role   = "eng"
+text   = "Will the review panel paginate when there are many questions?"
+status = "open"
+by     = "human"
+at     = "2026-06-08"
+
+[[question]]
+id     = "q5"
+target = "*"
+role   = "exec"
+text   = "Are we ready to demo the offline loop?"
+status = "open"
+by     = "human"
+at     = "2026-06-08"

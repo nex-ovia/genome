@@ -132,6 +132,22 @@ pub fn resolve(anchor: &Path) -> R<J> {
         quality = J::Object(m);
     }
 
+    // --- control plane: questions + approvals (TOML is the database) --------
+    let mut questions: Vec<J> = vec![];
+    for f in arr(&inc, "questions") {
+        let d = io::load_rel(root, &f)?;
+        if let Some(q) = d.get("question").and_then(J::as_array) {
+            questions.extend(q.iter().cloned());
+        }
+    }
+    let mut approvals: Vec<J> = vec![];
+    for f in arr(&inc, "approvals") {
+        let d = io::load_rel(root, &f)?;
+        if let Some(a) = d.get("approval").and_then(J::as_array) {
+            approvals.extend(a.iter().cloned());
+        }
+    }
+
     // --- assemble the embed (key order is part of the contract) -------------
     let mut project = genome.get("project").and_then(J::as_object).cloned().unwrap_or_default();
     if let Some(J::String(intent)) = project.get("intent") {
@@ -155,6 +171,8 @@ pub fn resolve(anchor: &Path) -> R<J> {
     embed.insert("delivery".into(), delivery);
     embed.insert("deployment".into(), deployment);
     embed.insert("quality".into(), quality);
+    embed.insert("questions".into(), J::Array(questions));
+    embed.insert("approvals".into(), J::Array(approvals));
     Ok(J::Object(embed))
 }
 

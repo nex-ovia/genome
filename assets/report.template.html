@@ -196,7 +196,7 @@
   <a href="#overview">What it is</a><a href="#architecture">Architecture</a>
   <a href="#graph" class="t-arch">Graph</a><a href="#modules" id="nav_comp">Components</a>
   <a href="#lifecycle">Lifecycle</a><a href="#delivery">Plan</a><a href="#policies">Policies</a>
-  <a href="#commits">Commits</a><a href="#drift">Drift</a>
+  <a href="#review">Review</a><a href="#commits">Commits</a><a href="#drift">Drift</a>
   <span style="flex:1"></span>
   <span class="seg"><button class="gbtn" id="v_exec" title="Purpose, status, % done, risks, owners">Executive</button><button class="gbtn" id="v_arch" title="All dependencies &amp; structure — no code">Architect</button><button class="gbtn on" id="v_eng" title="Everything incl. functions, libraries, paths">Engineer</button></span>
 </nav>
@@ -276,6 +276,13 @@
   <h2 class="sec">Policies declared in the genome</h2>
   <p class="sublede"><b style="color:var(--human)">validated</b> policies are enforced by the validator; <b style="color:var(--faint)">advisory</b> ones are surfaced as warnings.</p>
   <div id="pols"></div>
+</section>
+
+<section id="review">
+  <div class="eyebrow">Human-in-the-loop · control plane</div>
+  <h2 class="sec">Review — questions &amp; approvals</h2>
+  <p class="sublede">Questions and sign-offs live in the genome's TOML (the database); this is a read-only window onto them, by role lens. Items targeting the <b>whole snapshot</b> come first, then those attached to a specific component. Written with <span class="fn">genome ask</span> and <span class="fn">genome approve</span>.</p>
+  <div id="review_view"></div>
 </section>
 
 <section id="commits">
@@ -392,12 +399,39 @@ document.getElementById('driftview').innerHTML=
   `<div class="note" style="margin:0 0 12px">Showing drift introduced by <b style="color:var(--ink)">PR #${DRIFT.pr}</b>.</div>`+
   DRIFT.rows.map(r=>`<div class="drow ${r.sev}"><div class="dic">${r.ic}</div><div class="dmsg">${r.msg}<small>${r.sub}</small></div><div class="dtag">${r.tag}</div></div>`).join('');
 
+// Questions & approvals attached to a single node (shown in its detail panel).
+function qaForNode(id){
+  const QS=(GENOME.questions||[]).filter(q=>q.target===id), AP=(GENOME.approvals||[]).filter(a=>a.target===id);
+  if(!QS.length&&!AP.length) return '';
+  const rn={exec:'Executive',arch:'Architect',eng:'Engineer'};
+  const dcol=d=>d==='approved'?'var(--human)':d==='rejected'?'#f85149':'var(--faint)';
+  const items=AP.map(a=>`<span class="pill" style="border-color:${dcol(a.decision)};color:${dcol(a.decision)}">${rn[a.role]||a.role}: ${a.decision}</span>`)
+    .concat(QS.map(q=>`<span class="pill" title="${(q.text||'').replace(/"/g,'&quot;')}">${rn[q.role]||q.role} asks${q.status==='answered'?' ✓':''}</span>`)).join(' ');
+  return `<div class="field t-arch" style="margin-top:10px"><div class="k">Questions &amp; approvals</div><div class="v">${items}</div></div>`;
+}
+// review — questions & approvals (the human-in-the-loop control plane; TOML is the database)
+{ const QS=GENOME.questions||[], AP=GENOME.approvals||[];
+  const rn={exec:'Executive',arch:'Architect',eng:'Engineer'};
+  const dcol=d=>d==='approved'?'var(--human)':d==='rejected'?'#f85149':'var(--faint)';
+  const decPill=d=>`<span class="pill" style="border-color:${dcol(d)};color:${dcol(d)}">${d}</span>`;
+  const qH=q=>`<div class="field"><div class="k">${rn[q.role]||q.role} asks${q.status==='answered'?' · answered':''}</div><div class="v">${q.text||''}${q.answer?`<div class="pw" style="margin-top:6px"><b style="color:var(--faint)">Answer:</b> ${q.answer}</div>`:''}</div></div>`;
+  const aH=a=>`<div class="field"><div class="k">${rn[a.role]||a.role} · sign-off</div><div class="v">${decPill(a.decision)}${a.note?` ${a.note}`:''}</div></div>`;
+  const targets=[...new Set([...QS.map(q=>q.target),...AP.map(a=>a.target)])].sort((x,y)=>x==='*'?-1:y==='*'?1:0);
+  const blocks=targets.map(t=>{
+    const qs=QS.filter(q=>q.target===t), as=AP.filter(a=>a.target===t);
+    const head=t==='*'?'Whole snapshot':`<span class="modtag" onclick="goNode('${t}')">${N[t]?N[t].label:t}</span>`;
+    return `<div class="policy"><div class="ph"><span class="pn">${head}</span><span class="enf">${qs.length} question${qs.length!==1?'s':''} · ${as.length} sign-off${as.length!==1?'s':''}</span></div>${as.map(aH).join('')}${qs.map(qH).join('')}</div>`;
+  }).join('');
+  document.getElementById('review_view').innerHTML = (QS.length||AP.length)? blocks
+    : '<div class="note">No questions or approvals yet — add them with <span class="fn">genome ask</span> / <span class="fn">genome approve</span>.</div>';
+}
 function provBadge(p){const by=p?.by||'human',conf=p?.confidence??1,col=`var(--${by})`;const meta=(by==='llm'||by==='scan')?` · ${Math.round(conf*100)}%`:'';return `<span class="prov ${by}"><span class="dot"></span>${PROV_LABEL[by]}${meta}</span>`+((by==='llm'||by==='scan')?`<div class="conf"><i style="width:${conf*100}%;background:${col}"></i></div>`:'');}
 function field(k,v,prov){return `<div class="field"><div class="k">${k}</div><div class="v">${v||'<i>— empty, awaiting enrichment —</i>'}</div>${provBadge(prov)}</div>`;}
 function showDetail(id){
   const n=N[id];if(!n)return;const c=layerColor(n.layer);
   const rel=GENOME.links.filter(e=>e.from===id||e.to===id).map(e=>e.from===id?`→ ${e.relation} <b>${N[e.to].label}</b>`:`← ${N[e.from].label} ${e.relation}`).map(s=>`<div class="pill">${s}</div>`).join('');
   detail.innerHTML=`<div class="dt">${n.label}</div>${n.path?`<div class="dp t-eng">${n.path}</div>`:''}<div style="margin:7px 0"><span class="pill" style="border-color:${c};color:${c}">${n.layer&&A.layers[n.layer]?A.layers[n.layer].label:(n.layer||DOM.one)}</span>${n.kind?`<span class="pill">${n.kind}</span>`:''}<span class="pill">${n.status||''}</span></div><div class="dgrid"><div>${field('Summary',n.summary,n.provenance?.summary)}${field('Why',n.why,n.provenance?.why)}</div><div>${extraFields(n).map(([k,v])=>{const tech=(DOM.tech||[]).includes(k)?' t-eng':'';const vals=Array.isArray(v)?v.map(x=>`<span class="fn">${x}</span>`).join(' '):v;return `<div class="field${tech}"><div class="k">${k.replace(/_/g,' ')}</div><div class="v">${vals}</div></div>`;}).join('')}<div class="field t-arch"><div class="k">Dependencies &amp; ${DOM.link.toLowerCase()}s</div><div class="v">${rel}</div></div></div></div>`;
+  detail.innerHTML+=qaForNode(id);
 }
 
 /* ====================== INTERACTIVE GRAPH ====================== */
