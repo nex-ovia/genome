@@ -1,0 +1,23 @@
+# genome/approvals.toml — sign-offs on the genome, by role lens.
+#
+# Referenced from nexovia.toml [include].approvals. Part of the CONTROL PLANE:
+# the TOML is the database, the HTML reflects it. Written by `genome approve`;
+# rendered (read-only) per node and per snapshot.
+#   target = a component id, or "*" for the whole snapshot
+#   role   ∈ exec | arch | eng     decision ∈ pending | approved | rejected
+
+[[approval]]
+target   = "render_html"
+role     = "arch"
+decision = "approved"
+note     = "Phase-1 renderer byte-matches the golden; the fidelity gate is green."
+by       = "human"
+at       = "2026-06-08"
+
+[[approval]]
+target   = "*"
+role     = "exec"
+decision = "pending"
+note     = "Awaiting the full offline loop (enrich + ask/approve) before signing off on the snapshot."
+by       = "human"
+at       = "2026-06-08"

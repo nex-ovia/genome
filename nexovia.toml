@@ -63,3 +63,5 @@ lifecycle = ["project/lifecycle.toml"]                          # features, enha
 delivery   = ["project/delivery.toml"]                         # estimates, resourcing, cost
 deployment = ["project/deployment.toml"]                       # how it ships
 quality    = ["project/quality.toml"]                          # perf budgets + QA gates
+questions  = ["project/questions.toml"]                        # questions raised, by role lens (control plane)
+approvals  = ["project/approvals.toml"]                        # sign-offs, by role lens (control plane)

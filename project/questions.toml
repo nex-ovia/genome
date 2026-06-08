@@ -1,0 +1,35 @@
+# genome/questions.toml — questions raised on the genome, routed by role lens.
+#
+# Referenced from nexovia.toml [include].questions. This is part of the CONTROL
+# PLANE: the TOML is the database, the HTML is a read-only window onto it. Written
+# by `genome ask`; rendered (read-only) per node and per snapshot.
+#   target = a component id, or "*" for the whole snapshot
+#   role   ∈ exec | arch | eng     status ∈ open | answered
+
+[[question]]
+id     = "q1"
+target = "enrich_llm"
+role   = "arch"
+text   = "Does the embedded GGUF model ship inside the release artifact, or is it fetched once and cached on first run?"
+status = "open"
+by     = "human"
+at     = "2026-06-08"
+
+[[question]]
+id     = "q2"
+target = "render_html"
+role   = "eng"
+text   = "When questions and approvals render, do they appear inline under each node or in a side panel?"
+status = "open"
+by     = "human"
+at     = "2026-06-08"
+
+[[question]]
+id     = "q3"
+target = "*"
+role   = "exec"
+text   = "What is the smallest end-to-end demo that proves a non-developer can understand a project and sign off on it?"
+status = "answered"
+answer = "Document → genome → offline-enriched HTML → ask/approve, entirely offline. That is exactly the MVP loop (feat-loop)."
+by     = "human"
+at     = "2026-06-08"

@@ -10,7 +10,7 @@ scope       = ["*"]
 enforcement = "validated"   # validate fails on any execution → persistence/surface edge
 
 [efficiency]
-statement   = "The default binary is network-free and small (opt-level=\"z\", lto, strip). The LLM client and MCP server live behind cargo features so the core never pays for optional intelligence."
+statement   = "The default binary is network-free and small (opt-level=\"z\", lto, strip). Optional intelligence lives behind cargo features — the MCP server, and an embedded GGUF inference engine that runs fully offline (no client, no socket) — so the core never pays for it and even enrichment needs no network."
 why         = "The promise is the smallest intelligent binary. Optional capability must not bloat the default path, and the deterministic core must run anywhere with no network."
 scope       = ["enrich_llm", "agent_mcp"]
 enforcement = "validated"   # validate fails if a default-feature dep pulls in a network/LLM client
@@ -32,3 +32,9 @@ statement   = "Never write a semantic field (summary, why, inferred edge) withou
 why         = "This is the differentiator over every scanner and over the old nexovia, which faked understanding with templated [nexovia:auto] boilerplate. Honesty is the product."
 scope       = ["enrich_llm", "validate", "ingest_scan", "ingest_doc"]
 enforcement = "validated"   # validate fails on a semantic field missing a provenance entry
+
+[workflow]
+statement   = "Each lifecycle phase is built on its own branch and lands via a reviewed PR; phases are independent and composed only through the hexagonal dependency rule. Commits stay clean (no attribution trailers)."
+why         = "Independent, reviewable units keep the genome honest about what actually shipped and let a non-developer approve one coherent slice at a time via the rendered HTML — the human-in-the-loop gate."
+scope       = ["*"]
+enforcement = "advisory"

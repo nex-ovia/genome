@@ -23,6 +23,9 @@ by          = ["human", "agent", "scan", "llm", "org"]
 enforcement = ["validated", "advisory"]
 item_kind   = ["feature", "enhancement", "bug", "chore", "spike", "section", "research", "review"]
 source      = ["code", "document", "prompt", "mixed"]
+role        = ["exec", "arch", "eng"]                       # the three view-lenses (who is asking / approving)
+q_status    = ["open", "answered"]
+decision    = ["pending", "approved", "rejected"]
 
 # ── [project] (required) — the stable anchor ─────────────────────────────────
 [project]
@@ -89,11 +92,34 @@ priority   = { type = "string", required = false }
 components = { type = "array", of = "ref:component", required = false }
 why        = { type = "string", required = false }
 
+# ── question — each [[question]]; the control-plane Q&A, by role lens ─────────
+# target resolves to a component id, or "*" for the whole snapshot.
+[question]
+id     = { type = "string", required = true }
+target = { type = "ref:component|snapshot", required = true }
+role   = { type = "enum:role", required = true }
+text   = { type = "string", required = true }
+status = { type = "enum:q_status", required = true }
+answer = { type = "string", required = false }
+by     = { type = "string", required = false }
+at     = { type = "string", required = false }
+
+# ── approval — each [[approval]]; sign-off, by role lens ──────────────────────
+[approval]
+target   = { type = "ref:component|snapshot", required = true }
+role     = { type = "enum:role", required = true }
+decision = { type = "enum:decision", required = true }
+note     = { type = "string", required = false }
+by       = { type = "string", required = false }
+at       = { type = "string", required = false }
+
 # ── [include] — composition; extensible to any facet ─────────────────────────
 [include]
 components = { type = "array", of = "path", required = false }
 policies   = { type = "array", of = "path", required = false }
 lifecycle  = { type = "array", of = "path", required = false }
+questions  = { type = "array", of = "path", required = false }
+approvals  = { type = "array", of = "path", required = false }
 # Open by design: future facets (delivery, deployment, quality, cost) compose in
 # the same way — reference a fragment, and validate/render pick it up.
 

@@ -1,16 +1,19 @@
 # genome/lifecycle.toml — product lifecycle: features, enhancements, bugs.
 #
-# Referenced from nexovia.toml [include].lifecycle. Each item links to the components
-# it touches, so completion and drift can be read against real work, and a
-# commit/PR can be tied to the item it advances.
-#   status ∈ proposed | planned | in_progress | shipped | deprecated
+# Referenced from nexovia.toml [include].lifecycle. THIS FILE IS THE PLAN: the MVP
+# is the live loop (understand → ask → approve), built document-first and fully
+# offline; the engine work (scan/LSP/scaffold/freeze/track/MCP) is deferred as
+# `proposed` until promoted. Each item links to the components it touches.
+#   status ∈ proposed | planned | in_progress | active | shipped | deprecated
 #   kind   ∈ feature | enhancement | bug | chore | spike
+
+# ── MVP: the human-in-the-loop comprehension + approval window ────────────────
 
 [[item]]
 id       = "phase0-spec"
 kind     = "chore"
 title    = "Author the design-first genome + interactive mock"
-status   = "in_progress"
+status   = "shipped"
 priority = "high"
 components = ["genome_model", "render_html"]
 why      = "The dogfood: build the spec and the visual target before any Rust."
@@ -19,70 +22,114 @@ why      = "The dogfood: build the spec and the visual target before any Rust."
 id       = "feat-contract-render"
 kind     = "feature"
 title    = "Genome contract + HTML renderer (reproduce the mock)"
-status   = "planned"
+status   = "in_progress"
 priority = "high"
 components = ["genome_model", "genome_io", "render_html"]
-why      = "Phase 1 — prove schema + TOML→HTML by reproducing this page from the TOML."
+why      = "Phase 1 — prove schema + TOML→HTML by reproducing this page from the TOML. Built; under review."
 
 [[item]]
-id       = "feat-scan"
+id       = "chore-plan-as-genome"
+kind     = "chore"
+title    = "Encode the MVP plan into the genome (facets + scoping)"
+status   = "in_progress"
+priority = "high"
+components = ["genome_model", "render_html"]
+why      = "The genome is the plan: add questions/approvals facets, re-spec enrich to embedded GGUF, scope the MVP, defer the engine. No separate plan doc."
+
+[[item]]
+id       = "feat-validate"
 kind     = "feature"
-title    = "Deterministic code scanner (languages, edges, symbols)"
+title    = "Validator — schema + honesty + integrity gates"
 status   = "planned"
 priority = "high"
-components = ["ingest_scan", "genome_merge"]
-why      = "Capture structure for free before any LLM; the trustworthy skeleton."
+components = ["validate"]
+why      = "Makes the genome's own quality bar binding; question/approval targets must resolve. Powers PR gates."
 
 [[item]]
 id       = "feat-doc-ingest"
 kind     = "feature"
-title    = "Doc / prompt → design-first genome"
+title    = "Document → design-first genome"
 status   = "planned"
-priority = "medium"
+priority = "high"
 components = ["ingest_doc"]
-why      = "The strongest differentiator — a genome before code exists."
+why      = "The MVP entry point: a spec/one-pager becomes a genome a non-developer can read."
+
+[[item]]
+id       = "feat-enrich-offline"
+kind     = "feature"
+title    = "Offline enrichment via embedded GGUF (feature: enrich)"
+status   = "planned"
+priority = "high"
+components = ["enrich_llm"]
+why      = "Plain-language summary/why per node so non-developers understand — fully offline, no network, no server."
+
+[[item]]
+id       = "feat-loop"
+kind     = "feature"
+title    = "Questions + approvals loop (ask / approve, per node + snapshot)"
+status   = "planned"
+priority = "high"
+components = ["genome_model", "genome_io", "render_html", "cli"]
+why      = "Closes the MVP: TOML is the database for questions/approvals; the HTML reflects them under the three lenses."
+
+# ── Deferred engine — design for, build later (one branch + PR when promoted) ──
+
+[[item]]
+id       = "feat-scan"
+kind     = "feature"
+title    = "Codebase ingest via tree-sitter (precision)"
+status   = "proposed"
+priority = "medium"
+components = ["ingest_scan", "genome_merge"]
+why      = "Read an existing repo with precision of clarity; merge keeps human/agent edits sticky."
+
+[[item]]
+id       = "feat-lsp"
+kind     = "feature"
+title    = "LSP surface (+ optional cross-file edges)"
+status   = "proposed"
+priority = "low"
+why      = "Let non-developers hover and navigate the architecture inside their IDE."
+
+[[item]]
+id       = "feat-scaffold"
+kind     = "feature"
+title    = "Scaffold a stub file tree from an approved genome"
+status   = "proposed"
+priority = "low"
+why      = "For a new project: emit a starting skeleton that matches the approved architecture."
+
+[[item]]
+id       = "feat-freeze"
+kind     = "feature"
+title    = "Freeze + drift (status frozen + content-hash baseline)"
+status   = "proposed"
+priority = "medium"
+why      = "Approve → lock the architecture as the authoritative baseline; measure code drift against it."
 
 [[item]]
 id       = "feat-track"
 kind     = "feature"
 title    = "Incremental scan + re-render on commit/PR"
 status   = "proposed"
-priority = "high"
-components = ["track", "ingest_scan"]
-why      = "Makes it a live tool; drift and completion update per change."
-
-[[item]]
-id       = "feat-enrich"
-kind     = "feature"
-title    = "Optional LLM enrichment (BYO key, feature-gated)"
-status   = "proposed"
-priority = "medium"
-components = ["enrich_llm"]
-why      = "Hybrid intelligence, kept off the default path per the efficiency policy."
-
-[[item]]
-id       = "enh-stable-toml"
-kind     = "enhancement"
-title    = "Byte-stable TOML serialization for clean diffs"
-status   = "planned"
-priority = "medium"
-components = ["genome_io"]
-why      = "Re-runs must not churn the file; genome_io owns one canonical format."
+priority = "low"
+components = ["track"]
+why      = "Makes it a live tool once codebase ingest exists; drift and completion update per change."
 
 [[item]]
 id       = "feat-mcp"
 kind     = "feature"
-title    = "MCP agent server (get_node / set_field / validate)"
+title    = "MCP server (agents write proposals / questions)"
 status   = "proposed"
 priority = "low"
 components = ["agent_mcp"]
-why      = "Integration: agents become first-class authors of the genome."
+why      = "Integration: agents become first-class authors of the genome alongside humans."
 
 [[item]]
-id       = "bug-prov-edges"
-kind     = "bug"
-title    = "Provenance badge missing on inferred edges in the renderer"
+id       = "feat-enrich-cloud"
+kind     = "enhancement"
+title    = "Optional cloud enrichment (BYO key, feature-gated)"
 status   = "proposed"
 priority = "low"
-components = ["render_html"]
-why      = "Edges carry provenance too; the detail panel should show it like fields do."
+components = ["enrich_llm"]
+why      = "A heavier-accuracy path for those who opt in; the default stays offline embedded GGUF."
