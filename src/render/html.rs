@@ -24,48 +24,25 @@ pub fn resolve(anchor: &Path) -> R<J> {
     let genome = io::load_path(anchor)?;
     let inc = obj(&genome, "include");
 
-    // --- architecture: extends base ⊕ local overrides ----------------------
-    let arch = genome.get("architecture").cloned().unwrap_or(J::Null);
-    let base = io::load_rel(root, arch.get("extends").and_then(J::as_str).unwrap_or(""))?;
-    let overrides = arch.get("layers").and_then(J::as_object).cloned().unwrap_or_default();
-    let mut layers = Map::new();
-    for (name, l) in base.get("layers").and_then(J::as_object).cloned().unwrap_or_default() {
-        let mut merged = l.as_object().cloned().unwrap_or_default();
-        let mut ov: Vec<J> = vec![];
-        if let Some(o) = overrides.get(&name).and_then(J::as_object) {
-            for (k, v) in o {
-                if merged.get(k) != Some(v) {
-                    ov.push(J::String(k.clone()));
-                }
-                merged.insert(k.clone(), v.clone());
-            }
-        }
-        let src = if ov.is_empty() { "inherited" } else { "override" };
-        merged.insert("_ov".into(), J::Array(ov));
-        merged.insert("_src".into(), J::String(src.into()));
-        layers.insert(name, J::Object(merged));
-    }
-    for (name, l) in &overrides {
-        if !layers.contains_key(name) {
-            let mut m = l.as_object().cloned().unwrap_or_default();
-            let keys: Vec<J> = m.keys().map(|k| J::String(k.clone())).collect();
-            m.insert("_ov".into(), J::Array(keys));
-            m.insert("_src".into(), J::String("local".into()));
-            m.insert("_added".into(), J::Bool(true));
-            layers.insert(name.clone(), J::Object(m));
-        }
-    }
-    let mut architecture = Map::new();
-    for k in ["pattern", "basis", "dependency_rule", "description"] {
-        architecture.insert(k.into(), base.get(k).cloned().unwrap_or(J::Null));
-    }
-    architecture.insert("extends".into(), arch.get("extends").cloned().unwrap_or(J::Null));
-    architecture.insert("fluid".into(), arch.get("fluid").cloned().unwrap_or(J::Bool(false)));
-    architecture.insert("layers".into(), J::Object(layers));
+    // --- architecture: composed (extends ⊕ overrides) or self-contained ----
+    let arch = genome.get("architecture").cloned().unwrap_or(J::Object(Map::new()));
+    let architecture = if arch.get("extends").and_then(J::as_str).is_some() {
+        resolve_arch_extends(root, &arch)?
+    } else {
+        resolve_arch_inline(&arch)
+    };
 
-    // --- nodes + edges (from include.components) ---------------------------
+    // --- nodes + edges (inline first, then include.components) --------------
     let mut nodes = Map::new();
     let mut edges: Vec<J> = vec![];
+    if let Some(c) = genome.get("components").and_then(J::as_object) {
+        for (k, v) in c {
+            nodes.insert(k.clone(), v.clone());
+        }
+    }
+    if let Some(l) = genome.get("links").and_then(J::as_array) {
+        edges.extend(l.iter().cloned());
+    }
     for f in arr(&inc, "components") {
         let d = io::load_rel(root, &f)?;
         if let Some(c) = d.get("components").and_then(J::as_object) {
@@ -121,8 +98,11 @@ pub fn resolve(anchor: &Path) -> R<J> {
         }
     }
 
-    // --- lifecycle ----------------------------------------------------------
+    // --- lifecycle (inline [[lifecycle]] first, then include.lifecycle) -----
     let mut lifecycle: Vec<J> = vec![];
+    if let Some(items) = genome.get("lifecycle").and_then(J::as_array) {
+        lifecycle.extend(items.iter().cloned());
+    }
     for f in arr(&inc, "lifecycle") {
         let d = io::load_rel(root, &f)?;
         if let Some(items) = d.get("item").and_then(J::as_array) {
@@ -166,7 +146,7 @@ pub fn resolve(anchor: &Path) -> R<J> {
 
     let mut embed = Map::new();
     embed.insert("project".into(), J::Object(project));
-    embed.insert("architecture".into(), J::Object(architecture));
+    embed.insert("architecture".into(), architecture);
     embed.insert("policies".into(), J::Object(policies));
     embed.insert("policy_includes".into(), J::Array(policy_includes));
     embed.insert("components".into(), J::Object(nodes));
@@ -176,6 +156,69 @@ pub fn resolve(anchor: &Path) -> R<J> {
     embed.insert("deployment".into(), deployment);
     embed.insert("quality".into(), quality);
     Ok(J::Object(embed))
+}
+
+// --- architecture resolution -----------------------------------------------
+/// Composed architecture: inherit a base topology via `extends`, override only
+/// what this genome changes; each layer tagged inherited / override / local.
+fn resolve_arch_extends(root: &Path, arch: &J) -> R<J> {
+    let base = io::load_rel(root, arch.get("extends").and_then(J::as_str).unwrap_or(""))?;
+    let overrides = arch.get("layers").and_then(J::as_object).cloned().unwrap_or_default();
+    let mut layers = Map::new();
+    for (name, l) in base.get("layers").and_then(J::as_object).cloned().unwrap_or_default() {
+        let mut merged = l.as_object().cloned().unwrap_or_default();
+        let mut ov: Vec<J> = vec![];
+        if let Some(o) = overrides.get(&name).and_then(J::as_object) {
+            for (k, v) in o {
+                if merged.get(k) != Some(v) {
+                    ov.push(J::String(k.clone()));
+                }
+                merged.insert(k.clone(), v.clone());
+            }
+        }
+        let src = if ov.is_empty() { "inherited" } else { "override" };
+        merged.insert("_ov".into(), J::Array(ov));
+        merged.insert("_src".into(), J::String(src.into()));
+        layers.insert(name, J::Object(merged));
+    }
+    for (name, l) in &overrides {
+        if !layers.contains_key(name) {
+            let mut m = l.as_object().cloned().unwrap_or_default();
+            let keys: Vec<J> = m.keys().map(|k| J::String(k.clone())).collect();
+            m.insert("_ov".into(), J::Array(keys));
+            m.insert("_src".into(), J::String("local".into()));
+            m.insert("_added".into(), J::Bool(true));
+            layers.insert(name.clone(), J::Object(m));
+        }
+    }
+    let mut out = Map::new();
+    for k in ["pattern", "basis", "dependency_rule", "description"] {
+        out.insert(k.into(), base.get(k).cloned().unwrap_or(J::Null));
+    }
+    out.insert("extends".into(), arch.get("extends").cloned().unwrap_or(J::Null));
+    out.insert("fluid".into(), arch.get("fluid").cloned().unwrap_or(J::Bool(false)));
+    out.insert("layers".into(), J::Object(layers));
+    Ok(J::Object(out))
+}
+
+/// Self-contained architecture (e.g. a document outline): no base, every layer
+/// is local. Preserves the genome's own field order, layers last.
+fn resolve_arch_inline(arch: &J) -> J {
+    let mut layers = Map::new();
+    for (name, l) in arch.get("layers").and_then(J::as_object).cloned().unwrap_or_default() {
+        let mut m = l.as_object().cloned().unwrap_or_default();
+        m.insert("_ov".into(), J::Array(vec![]));
+        m.insert("_src".into(), J::String("local".into()));
+        layers.insert(name, J::Object(m));
+    }
+    let mut out = Map::new();
+    for (k, v) in arch.as_object().cloned().unwrap_or_default() {
+        if k != "layers" {
+            out.insert(k, v);
+        }
+    }
+    out.insert("layers".into(), J::Object(layers));
+    J::Object(out)
 }
 
 // --- small helpers ---------------------------------------------------------

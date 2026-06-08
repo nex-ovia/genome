@@ -20,6 +20,34 @@ pub fn load_rel(root: &Path, rel: &str) -> R<J> {
     load_path(&root.join(rel))
 }
 
+/// Serialize a genome value to TOML text (stable key order; nulls dropped).
+/// The inverse of `load_*` — used when the tool writes a genome (e.g. from-doc).
+pub fn to_toml_string(v: &J) -> R<String> {
+    Ok(toml::to_string(&json_to_toml(v))?)
+}
+
+fn json_to_toml(v: &J) -> toml::Value {
+    match v {
+        J::Null => toml::Value::String(String::new()),
+        J::Bool(b) => toml::Value::Boolean(*b),
+        J::Number(n) => n
+            .as_i64()
+            .map(toml::Value::Integer)
+            .unwrap_or_else(|| toml::Value::Float(n.as_f64().unwrap_or(0.0))),
+        J::String(s) => toml::Value::String(s.clone()),
+        J::Array(a) => toml::Value::Array(a.iter().map(json_to_toml).collect()),
+        J::Object(o) => {
+            let mut t = toml::value::Table::new();
+            for (k, val) in o {
+                if !val.is_null() {
+                    t.insert(k.clone(), json_to_toml(val));
+                }
+            }
+            toml::Value::Table(t)
+        }
+    }
+}
+
 /// Faithful TOML→JSON, preserving key order and the int/float distinction.
 fn toml_to_json(v: &toml::Value) -> J {
     match v {
