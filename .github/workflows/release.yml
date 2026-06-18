@@ -18,15 +18,19 @@ jobs:
           - target: x86_64-unknown-linux-musl   # Linux (static, portable)
             os: ubuntu-latest
             ext: ""
-          - target: x86_64-apple-darwin          # macOS (Intel)
-            os: macos-13
-            ext: ""
-          - target: aarch64-apple-darwin         # macOS (Apple Silicon)
+            test: true
+          - target: aarch64-apple-darwin         # macOS (Apple Silicon, native)
             os: macos-latest
             ext: ""
+            test: true
+          - target: x86_64-apple-darwin          # macOS (Intel, cross-built on Apple Silicon)
+            os: macos-latest
+            ext: ""
+            test: false
           - target: x86_64-pc-windows-msvc       # Windows
             os: windows-latest
             ext: ".exe"
+            test: true
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -39,6 +43,7 @@ jobs:
         if: matrix.target == 'x86_64-unknown-linux-musl'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends musl-tools
       - name: Test
+        if: matrix.test
         run: cargo test --release --target ${{ matrix.target }} --verbose
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
