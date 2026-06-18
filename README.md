@@ -1,10 +1,18 @@
 # nexovia · `genome`
 
+[![CI](https://github.com/nex-ovia/genome/actions/workflows/ci.yml/badge.svg)](https://github.com/nex-ovia/genome/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/nex-ovia/genome?include_prereleases&label=release)](https://github.com/nex-ovia/genome/releases)
+[![License: BSL 1.1](https://img.shields.io/badge/license-BSL%201.1-blue.svg)](LICENSE)
+
 **One file is your project's genome** — a single, version-controlled source of truth that lets
 non-developers understand a system precisely enough to **ask the right question and approve it**,
 without reading code.
 
 > Brand: **nexovia** · Binary: **`genome`** · Config: **`nexovia.toml`** · Schema: `nexovia/2`
+
+> ⚠️ **Experimental.** This is an early MVP, released as a pre-release for validation and feedback.
+> The genome schema, CLI surface, and HTML output may change without notice — not yet stable.
+> Download the latest experimental build from the [**Releases**](https://github.com/nex-ovia/genome/releases) page.
 
 ---
 

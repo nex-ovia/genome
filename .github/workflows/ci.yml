@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  default:
+    name: fmt · clippy · test (default, offline)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Lint
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --verbose
+      - name: Offline gate — default build has no http client or inference engine
+        run: |
+          if cargo tree -e normal | grep -Ei 'reqwest|hyper|ureq|llama|candle'; then
+            echo "::error::default build pulled in a network or inference dependency"
+            exit 1
+          fi
+          echo "default build is network-free and inference-free"
+
+  enrich:
+    name: build enrich feature (embedded GGUF)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: C++ toolchain for llama.cpp
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake clang libclang-dev
+      - name: Lint (enrich)
+        run: cargo clippy --features enrich -- -D warnings
+      - name: Build (enrich)
+        run: cargo build --features enrich --verbose

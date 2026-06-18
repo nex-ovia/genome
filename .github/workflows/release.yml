@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release:
+    name: build · test · publish (experimental)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+      - uses: Swatinem/rust-cache@v2
+      - name: musl toolchain (static binary)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends musl-tools
+      - name: Test
+        run: cargo test --release --verbose
+      - name: Build static binary
+        run: cargo build --release --target x86_64-unknown-linux-musl
+      - name: Package
+        run: |
+          mkdir -p dist
+          cp target/x86_64-unknown-linux-musl/release/genome dist/genome
+          cp README.md LICENSE dist/
+          tar -czf "genome-${{ github.ref_name }}-x86_64-linux-musl.tar.gz" -C dist .
+          sha256sum "genome-${{ github.ref_name }}-x86_64-linux-musl.tar.gz" > "genome-${{ github.ref_name }}-x86_64-linux-musl.tar.gz.sha256"
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "genome ${{ github.ref_name }} (experimental)"
+          prerelease: true
+          generate_release_notes: true
+          body: |
+            > ⚠️ **Experimental pre-release.** This is an early MVP. The genome schema,
+            > CLI surface, and HTML output may change without notice. Not yet stable —
+            > do not depend on it in production.
+
+            **What's in the box:** a static Linux binary (`x86_64`, musl) for the
+            default, fully-offline `genome` (no network, no inference engine).
+
+            The optional offline enrichment (embedded GGUF model) is a build-time
+            feature — build it from source with `cargo build --release --features enrich`.
+
+            Verify the download: `sha256sum -c genome-*.sha256`.
+          files: |
+            genome-*.tar.gz
+            genome-*.tar.gz.sha256
