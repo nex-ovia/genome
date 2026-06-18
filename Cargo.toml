@@ -3,7 +3,7 @@ name = "nexovia"
 version = "0.1.0"
 edition = "2021"
 description = "One file is your project's genome — a config-driven comprehension + approval window."
-repository = "https://github.com/nex-ovia/nexovia"
+repository = "https://github.com/nex-ovia/genome"
 
 # Brand is nexovia; the binary is `genome`.
 [[bin]]
