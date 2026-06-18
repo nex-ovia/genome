@@ -12,7 +12,8 @@ without reading code.
 
 > ⚠️ **Experimental.** This is an early MVP, released as a pre-release for validation and feedback.
 > The genome schema, CLI surface, and HTML output may change without notice — not yet stable.
-> Download the latest experimental build from the [**Releases**](https://github.com/nex-ovia/genome/releases) page.
+> Download the latest experimental build (prebuilt for **Linux, macOS Intel/Apple Silicon, and Windows**)
+> from the [**Releases**](https://github.com/nex-ovia/genome/releases) page.
 
 ---
 
