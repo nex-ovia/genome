@@ -29,9 +29,9 @@ The scanner and AI agents are the default authors; a human edits it only to set 
 """
 source     = "prompt"
 schema     = "nexovia/2"
-status     = "planned"
+status     = "active"
 repository = "https://github.com/nex-ovia/genome"
-languages  = {}            # design-first: no code written yet
+languages  = { Rust = 1518 }   # the MVP is implemented; LOC across src/ + tests/
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Architecture — the design pattern, DECLARED in the genome (never hardcoded in
