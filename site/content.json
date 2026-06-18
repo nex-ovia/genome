@@ -1,0 +1,74 @@
+{
+  "site": {
+    "name": "genome",
+    "tagline": "Understand any system without reading its code.",
+    "description": "genome turns one editable nexovia.toml into a self-contained, offline HTML map of your project — its architecture, every module, what each part does and why — so architects, engineers, and executives can see it, question it, and approve it in the browser."
+  },
+  "repo": "nex-ovia/genome",
+  "links": {
+    "github": "https://github.com/nex-ovia/genome",
+    "releases": "https://github.com/nex-ovia/genome/releases",
+    "demo": "/demo/",
+    "hub": "https://www.nex-ovia.com",
+    "sponsor": "https://github.com/sponsors/nex-ovia"
+  },
+  "nav": [
+    { "label": "How it works", "href": "#how" },
+    { "label": "Install", "href": "#install" },
+    { "label": "Download", "href": "#download" },
+    { "label": "Tools", "href": "https://www.nex-ovia.com/tools" }
+  ],
+  "hero": {
+    "eyebrow": "Available · Experimental · Built on NXS",
+    "primary": { "label": "See the live demo", "href": "/demo/" },
+    "secondary": { "label": "View on GitHub", "href": "https://github.com/nex-ovia/genome" }
+  },
+  "install": {
+    "note": "Single self-contained binary. No runtime, no dependencies, fully offline. Verifies its own SHA-256.",
+    "unix": "curl -fsSL https://genome.nex-ovia.com/install.sh | sh",
+    "windows": "irm https://genome.nex-ovia.com/install.ps1 | iex"
+  },
+  "value": [
+    {
+      "title": "See it, don't read it",
+      "problem": "Understanding a system means reading code, chasing authors, or trusting a stale wiki.",
+      "solution": "One offline HTML map of the architecture and every module — switch Exec / Arch / Eng lenses, expand any part for its summary and rationale."
+    },
+    {
+      "title": "Question & approve",
+      "problem": "Non-developers can't safely sign off on something they can't inspect.",
+      "solution": "Ask a question or record an approval against any node or the whole snapshot. Every decision is captured in version control, not a chat thread."
+    },
+    {
+      "title": "Honest by construction",
+      "problem": "AI-generated docs blur what's known versus guessed, and drift the moment they're written.",
+      "solution": "Every field carries provenance and confidence; machine guesses never overwrite human edits. Re-render and it's never stale."
+    }
+  ],
+  "how": [
+    { "step": "from-doc", "desc": "Turn a spec or one-pager into a structured genome of design-first nodes." },
+    { "step": "enrich", "desc": "Optionally fill plain-language summaries with an embedded model — fully offline, stamped by=llm with a confidence." },
+    { "step": "ask / approve", "desc": "Raise questions and record approvals, per node or per snapshot — written back into the TOML." },
+    { "step": "render", "desc": "Generate a self-contained, read-only HTML map. Re-render to refresh; the HTML is a pure projection of the source." }
+  ],
+  "use": [
+    { "title": "Review a design before code exists", "desc": "Turn a spec into a reviewable map, then question and approve it." },
+    { "title": "Onboard onto an unfamiliar system", "desc": "Read the plain-language summary and why per module instead of spelunking the source." },
+    { "title": "Sign-off & governance", "desc": "Executives and architects approve per-module or the whole snapshot, captured in git." },
+    { "title": "Keep understanding from drifting", "desc": "Re-render after changes — the map is always a projection of the source of truth." }
+  ],
+  "sponsor": {
+    "label": "Fund the tooling",
+    "title": "Sponsorship builds genome faster.",
+    "body": "genome is free and source-available under BSL 1.1. Sponsorship funds the development time to build and maintain it.",
+    "cta": "Become a Sponsor"
+  },
+  "footer": {
+    "links": [
+      { "label": "All products", "href": "https://www.nex-ovia.com" },
+      { "label": "The Standard", "href": "https://www.nex-ovia.com/standard" },
+      { "label": "GitHub", "href": "https://github.com/nex-ovia/genome" },
+      { "label": "License (BSL 1.1)", "href": "https://github.com/nex-ovia/genome/blob/main/LICENSE" }
+    ]
+  }
+}

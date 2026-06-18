@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>genome — understand any system without reading its code</title>
+  <meta name="description" content="genome turns one nexovia.toml into a self-contained, offline HTML map of your project so you can see it, question it, and approve it in the browser. A nex-ovia tool, built on the Nexovia Standard.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <!-- CLOUDFLARE_ANALYTICS -->
+</head>
+<body>
+  <nav id="nav">
+    <div class="container">
+      <a href="/" class="nav-logo">genome<small>by nex·ovia</small></a>
+      <ul class="nav-links" id="nav-links"></ul>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Hero -->
+    <header class="page-hero">
+      <div class="page-hero-glow"></div>
+      <div class="container">
+        <div class="page-eyebrow animate-hero" id="hero-eyebrow"></div>
+        <h1 class="animate-hero delay-1" id="hero-title"></h1>
+        <p class="page-hero-sub animate-hero delay-1" id="hero-sub"></p>
+        <div class="hero-actions animate-hero delay-2" id="hero-actions"></div>
+      </div>
+    </header>
+
+    <!-- Value -->
+    <section id="value">
+      <div class="container">
+        <div class="section-label reveal">Why genome</div>
+        <h2 class="section-title reveal">Comprehension you can act on.</h2>
+        <div class="grid grid-3" id="value-grid"></div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section id="how">
+      <div class="container">
+        <div class="section-label reveal">How it works</div>
+        <h2 class="section-title reveal">Document &rarr; map, in four moves.</h2>
+        <div class="grid grid-4" id="how-grid"></div>
+      </div>
+    </section>
+
+    <!-- Install -->
+    <section id="install">
+      <div class="container">
+        <div class="section-label reveal">Install</div>
+        <h2 class="section-title reveal">Get the binary on your machine.</h2>
+        <div class="card reveal" style="max-width:820px;">
+          <div class="install-row">
+            <div class="os">macOS &amp; Linux</div>
+            <div class="code-block">
+              <code><span class="prompt">$ </span><span id="install-unix"></span></code>
+              <button class="copy-btn" data-copy="install-unix">Copy</button>
+            </div>
+          </div>
+          <div class="install-row">
+            <div class="os">Windows (PowerShell)</div>
+            <div class="code-block">
+              <code><span class="prompt">&gt; </span><span id="install-windows"></span></code>
+              <button class="copy-btn" data-copy="install-windows">Copy</button>
+            </div>
+          </div>
+          <p class="install-note" id="install-note"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download -->
+    <section id="download">
+      <div class="container">
+        <div class="section-label reveal">Download</div>
+        <h2 class="section-title reveal">Prebuilt for every platform.</h2>
+        <div class="release-card reveal">
+          <div class="release-head" id="release-head"></div>
+          <div id="release-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Use cases -->
+    <section id="use">
+      <div class="container">
+        <div class="section-label reveal">Use cases</div>
+        <h2 class="section-title reveal">Built for the people who approve, not just write.</h2>
+        <div class="grid grid-2" id="use-grid"></div>
+      </div>
+    </section>
+
+    <!-- Sponsor -->
+    <section id="sponsor" style="padding-top:0;">
+      <div class="container">
+        <div class="sponsor-strip reveal">
+          <div>
+            <p class="sponsor-label" id="sponsor-label"></p>
+            <h3 class="sponsor-title" id="sponsor-title"></h3>
+            <p class="sponsor-body" id="sponsor-body"></p>
+          </div>
+          <a class="btn btn-sponsor" id="sponsor-cta" rel="noopener noreferrer" target="_blank"></a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-inner">
+        <a href="https://www.nex-ovia.com" class="footer-logo">nex<span>·</span>ovia</a>
+        <ul class="footer-links" id="footer-links"></ul>
+      </div>
+      <p class="footer-copy" id="footer-copy"></p>
+    </div>
+  </footer>
+
+  <script src="/site.js"></script>
+</body>
+</html>
