@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>genome — understand any system without reading its code</title>
+    <meta name="description" content="genome turns one nexovia.toml into a self-contained, offline HTML map of your project so you can see it, question it, and approve it in the browser. A nex-ovia product.">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest" defer></script>
+    <!-- CLOUDFLARE_ANALYTICS -->
+</head>
+<body class="selection:bg-blue-500/30">
+    <a href="#main" class="skip-link">Skip to content</a>
+
+    <nav id="navbar" class="fixed top-0 w-full z-50 transition-all duration-500 py-8">
+        <div class="max-w-7xl mx-auto px-8 flex justify-between items-center">
+            <a href="/" class="flex items-center gap-3 group">
+                <div class="logo-box"><i data-lucide="dna" class="text-white w-5 h-5"></i></div>
+                <span class="text-white font-bold text-2xl tracking-tighter">genome</span>
+                <span class="text-gray-500 text-xs font-semibold tracking-widest uppercase hidden sm:inline">by nex-ovia</span>
+            </a>
+            <div id="nav-links" class="hidden md:flex items-center gap-10 text-[11px] font-bold tracking-widest uppercase text-gray-400"></div>
+        </div>
+    </nav>
+
+    <main id="main" tabindex="-1">
+        <!-- Hero -->
+        <section class="hero-section">
+            <div class="hero-glow"></div>
+            <div class="max-w-7xl mx-auto px-8 relative z-10">
+                <div class="max-w-5xl">
+                    <span id="hero-badge" class="eyebrow-badge"></span>
+                    <h1 class="hero-title">genome <br><span id="hero-tagline" class="hero-gradient-text"></span></h1>
+                    <p id="hero-desc" class="hero-subtitle"></p>
+                    <div id="hero-actions" class="hero-actions"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Value -->
+        <section id="value" class="py-24 max-w-7xl mx-auto px-8">
+            <div class="mb-16">
+                <h3 class="section-label">Why genome</h3>
+                <h2 class="section-title">Comprehension you can act on.</h2>
+            </div>
+            <div id="value-grid" class="grid grid-cols-1 md:grid-cols-3 gap-8"></div>
+        </section>
+
+        <!-- How it works -->
+        <section id="how" class="py-24 max-w-7xl mx-auto px-8">
+            <div class="mb-16">
+                <h3 class="section-label">How it works</h3>
+                <h2 class="section-title">Document &rarr; map, in four moves.</h2>
+            </div>
+            <div id="how-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+        </section>
+
+        <!-- Install -->
+        <section id="install" class="py-24 max-w-7xl mx-auto px-8">
+            <div class="glass-card rounded-[2.5rem] p-10 md:p-16">
+                <h3 class="section-label" id="install-label"></h3>
+                <h2 class="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">Get the binary on your machine.</h2>
+                <p id="install-note" class="text-gray-400 text-lg mb-8 max-w-2xl"></p>
+                <div class="space-y-4 max-w-3xl">
+                    <div>
+                        <div class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">macOS &amp; Linux</div>
+                        <div class="code-block" data-copy-target="install-unix">
+                            <div><span class="prompt">$ </span><span class="cmd" id="install-unix"></span></div>
+                            <button class="copy-btn" data-copy="install-unix"><i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy</button>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Windows (PowerShell)</div>
+                        <div class="code-block" data-copy-target="install-windows">
+                            <div><span class="prompt">&gt; </span><span class="cmd" id="install-windows"></span></div>
+                            <button class="copy-btn" data-copy="install-windows"><i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Download / Releases -->
+        <section id="download" class="py-24 max-w-7xl mx-auto px-8">
+            <div class="mb-12 flex items-end justify-between flex-wrap gap-4">
+                <div>
+                    <h3 class="section-label">Download</h3>
+                    <h2 class="section-title">Prebuilt for every platform.</h2>
+                </div>
+                <a id="all-releases" class="btn-secondary" href="#"><i data-lucide="github" class="w-4 h-4"></i> All releases</a>
+            </div>
+            <div class="glass-card rounded-[2rem] overflow-hidden">
+                <div id="release-version" class="px-6 py-5 border-b border-white/5 text-gray-300 font-semibold flex items-center gap-3"></div>
+                <div id="release-list"></div>
+            </div>
+        </section>
+
+        <!-- Use cases -->
+        <section id="use" class="py-24 max-w-7xl mx-auto px-8">
+            <div class="mb-16">
+                <h3 class="section-label">Use cases</h3>
+                <h2 class="section-title">Built for the people who approve, not just write.</h2>
+            </div>
+            <div id="use-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="max-w-7xl mx-auto px-8 flex flex-col md:flex-row justify-between items-start gap-16">
+            <div class="max-w-xs">
+                <div class="flex items-center gap-3 mb-6">
+                    <i data-lucide="dna" class="text-blue-500 w-7 h-7"></i>
+                    <span class="text-white font-bold text-xl tracking-tighter">genome</span>
+                </div>
+                <p id="footer-bio" class="text-gray-500 leading-relaxed font-medium"></p>
+            </div>
+            <div id="footer-links" class="grid grid-cols-2 gap-20"></div>
+        </div>
+        <div id="footer-copy" class="footer-copy"></div>
+    </footer>
+
+    <script src="site.js"></script>
+</body>
+</html>
