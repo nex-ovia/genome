@@ -99,7 +99,11 @@ pub fn run(mut args: impl Iterator<Item = String>) -> R {
                 eprintln!("{i}");
             }
             if errors > 0 {
-                Err(format!("invalid: {errors} error(s), {} warning(s)", issues.len() - errors).into())
+                Err(format!(
+                    "invalid: {errors} error(s), {} warning(s)",
+                    issues.len() - errors
+                )
+                .into())
             } else {
                 eprintln!("valid ({} warning(s))", issues.len());
                 Ok(())
@@ -114,6 +118,10 @@ fn default_anchor() -> PathBuf {
     PathBuf::from("nexovia.toml")
 }
 
-fn need<I: Iterator<Item = String>>(args: &mut I, flag: &str) -> Result<String, Box<dyn std::error::Error>> {
-    args.next().ok_or_else(|| format!("{flag} needs a value").into())
+fn need<I: Iterator<Item = String>>(
+    args: &mut I,
+    flag: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+    args.next()
+        .ok_or_else(|| format!("{flag} needs a value").into())
 }

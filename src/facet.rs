@@ -23,12 +23,20 @@ pub fn ask(anchor: &Path, target: &str, role: &str, text: &str) -> R<String> {
 }
 
 /// Append an approval/decision targeting `target` (a component id or "*").
-pub fn approve(anchor: &Path, target: &str, role: &str, decision: &str, note: Option<&str>) -> R<()> {
+pub fn approve(
+    anchor: &Path,
+    target: &str,
+    role: &str,
+    decision: &str,
+    note: Option<&str>,
+) -> R<()> {
     check_target(anchor, target)?;
     let file = facet_file(anchor, "approvals")?;
     let mut block = format!(
         "\n[[approval]]\ntarget   = \"{}\"\nrole     = \"{}\"\ndecision = \"{}\"\n",
-        esc(target), esc(role), esc(decision)
+        esc(target),
+        esc(role),
+        esc(decision)
     );
     if let Some(n) = note {
         block += &format!("note     = \"{}\"\n", esc(n));
@@ -66,7 +74,10 @@ fn check_target(anchor: &Path, target: &str) -> R<()> {
     if ok {
         Ok(())
     } else {
-        Err(format!("target \"{target}\" is not a component (use \"*\" for the whole snapshot)").into())
+        Err(
+            format!("target \"{target}\" is not a component (use \"*\" for the whole snapshot)")
+                .into(),
+        )
     }
 }
 
@@ -76,14 +87,19 @@ fn count(file: &Path, marker: &str) -> R<usize> {
 }
 
 fn append(file: &Path, block: &str) -> R<()> {
-    let mut f = std::fs::OpenOptions::new().create(true).append(true).open(file)?;
+    let mut f = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(file)?;
     f.write_all(block.as_bytes())?;
     Ok(())
 }
 
 /// Escape a TOML basic-string value; collapse newlines so entries stay one line.
 fn esc(s: &str) -> String {
-    s.replace('\\', "\\\\").replace('"', "\\\"").replace(['\n', '\r', '\t'], " ")
+    s.replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace(['\n', '\r', '\t'], " ")
 }
 
 /// Today as YYYY-MM-DD (civil date from the system clock; no deps).

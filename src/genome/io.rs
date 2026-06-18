@@ -8,10 +8,10 @@ type R<T> = Result<T, Box<dyn std::error::Error>>;
 
 /// Load a TOML file at `path` into an order-preserving JSON value.
 pub fn load_path(path: &Path) -> R<J> {
-    let text = std::fs::read_to_string(path)
-        .map_err(|e| format!("reading {}: {e}", path.display()))?;
-    let tv: toml::Value = toml::from_str(&text)
-        .map_err(|e| format!("parsing {}: {e}", path.display()))?;
+    let text =
+        std::fs::read_to_string(path).map_err(|e| format!("reading {}: {e}", path.display()))?;
+    let tv: toml::Value =
+        toml::from_str(&text).map_err(|e| format!("parsing {}: {e}", path.display()))?;
     Ok(toml_to_json(&tv))
 }
 
@@ -59,8 +59,10 @@ fn toml_to_json(v: &toml::Value) -> J {
         toml::Value::Boolean(b) => J::Bool(*b),
         toml::Value::Datetime(dt) => J::String(dt.to_string()),
         toml::Value::Array(a) => J::Array(a.iter().map(toml_to_json).collect()),
-        toml::Value::Table(t) => {
-            J::Object(t.iter().map(|(k, v)| (k.clone(), toml_to_json(v))).collect())
-        }
+        toml::Value::Table(t) => J::Object(
+            t.iter()
+                .map(|(k, v)| (k.clone(), toml_to_json(v)))
+                .collect(),
+        ),
     }
 }

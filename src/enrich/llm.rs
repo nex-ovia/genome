@@ -50,7 +50,10 @@ pub fn enrich(anchor: &Path) -> R<()> {
         eprintln!("  · {id}: {why}");
     }
     std::fs::write(anchor, doc.to_string())?;
-    println!("enrich: filled {filled} why field(s) by=llm in {}", anchor.display());
+    println!(
+        "enrich: filled {filled} why field(s) by=llm in {}",
+        anchor.display()
+    );
     Ok(())
 }
 
@@ -82,7 +85,13 @@ fn set_why(doc: &mut toml_edit::DocumentMut, id: &str, why: &str) {
 }
 
 /// One concise sentence, greedily decoded (deterministic) from the GGUF model.
-fn generate(backend: &LlamaBackend, model: &LlamaModel, project: &str, label: &str, summary: &str) -> R<String> {
+fn generate(
+    backend: &LlamaBackend,
+    model: &LlamaModel,
+    project: &str,
+    label: &str,
+    summary: &str,
+) -> R<String> {
     let prompt = format!(
         "<|im_start|>system\nYou explain why a part of a system matters, in exactly one concise sentence. Start directly with the reason — never restate the project or part name, never add a preamble.<|im_end|>\n<|im_start|>user\nProject: {project}\nPart: {label}\nWhat it is: {summary}\n\nWhy does this part matter? Answer in one sentence, starting with a capital letter.<|im_end|>\n<|im_start|>assistant\n"
     );
@@ -105,7 +114,9 @@ fn generate(backend: &LlamaBackend, model: &LlamaModel, project: &str, label: &s
         if model.is_eog_token(tok) {
             break;
         }
-        out.push_str(&String::from_utf8_lossy(&model.token_to_piece_bytes(tok, 64, false, None)?));
+        out.push_str(&String::from_utf8_lossy(
+            &model.token_to_piece_bytes(tok, 64, false, None)?,
+        ));
         if out.contains("<|im_end|>") {
             break;
         }
@@ -124,7 +135,9 @@ fn clean(s: &str) -> String {
     let mut s = s.split('\n').next().unwrap_or(s).trim();
     for prefix in ["Project:", "Part:", "Why:", "Answer:"] {
         if let Some(rest) = s.strip_prefix(prefix) {
-            s = rest.trim_start_matches(|c: char| c != '.' && !c.is_alphabetic()).trim();
+            s = rest
+                .trim_start_matches(|c: char| c != '.' && !c.is_alphabetic())
+                .trim();
         }
     }
     s.split_whitespace().collect::<Vec<_>>().join(" ")
@@ -154,6 +167,9 @@ fn ensure_model() -> R<PathBuf> {
     std::io::copy(&mut reader, &mut f)?;
     drop(f);
     std::fs::rename(&tmp, &path)?;
-    eprintln!("enrich: cached model ({} MB)", path.metadata().map(|m| m.len() / 1_048_576).unwrap_or(0));
+    eprintln!(
+        "enrich: cached model ({} MB)",
+        path.metadata().map(|m| m.len() / 1_048_576).unwrap_or(0)
+    );
     Ok(path)
 }

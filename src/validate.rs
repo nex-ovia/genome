@@ -26,10 +26,18 @@ pub struct Issue {
 }
 impl Issue {
     fn error(rule: &str, message: String) -> Self {
-        Issue { rule: rule.into(), severity: Severity::Error, message }
+        Issue {
+            rule: rule.into(),
+            severity: Severity::Error,
+            message,
+        }
     }
     fn warn(rule: &str, message: String) -> Self {
-        Issue { rule: rule.into(), severity: Severity::Warn, message }
+        Issue {
+            rule: rule.into(),
+            severity: Severity::Warn,
+            message,
+        }
     }
 }
 impl fmt::Display for Issue {
@@ -78,7 +86,12 @@ pub fn validate(anchor: &Path) -> R<Vec<Issue>> {
 pub fn check_links(embed: &J) -> Vec<Issue> {
     let ids = component_ids(embed);
     let mut out = Vec::new();
-    for link in embed.get("links").and_then(J::as_array).into_iter().flatten() {
+    for link in embed
+        .get("links")
+        .and_then(J::as_array)
+        .into_iter()
+        .flatten()
+    {
         for end in ["from", "to"] {
             if let Some(id) = link.get(end).and_then(J::as_str) {
                 if !ids.contains(id) {
@@ -104,7 +117,10 @@ pub fn check_honesty(embed: &J) -> Vec<Issue> {
                 // No provenance block at all (e.g. a human-authored doc section):
                 // not an error, but worth surfacing rather than silently trusting.
                 for field in ["summary", "why"] {
-                    if c.get(field).and_then(J::as_str).is_some_and(|s| !s.is_empty()) {
+                    if c.get(field)
+                        .and_then(J::as_str)
+                        .is_some_and(|s| !s.is_empty())
+                    {
                         out.push(Issue::warn(
                             "require_provenance_on_semantic",
                             format!("component \"{id}\": \"{field}\" present but the node declares no provenance"),
@@ -115,7 +131,10 @@ pub fn check_honesty(embed: &J) -> Vec<Issue> {
             }
         };
         for field in ["summary", "why"] {
-            let present = c.get(field).and_then(J::as_str).is_some_and(|s| !s.is_empty());
+            let present = c
+                .get(field)
+                .and_then(J::as_str)
+                .is_some_and(|s| !s.is_empty());
             if present && !prov.contains_key(field) {
                 out.push(Issue::error(
                     "require_provenance_on_semantic",
@@ -131,20 +150,34 @@ pub fn check_honesty(embed: &J) -> Vec<Issue> {
 /// or surface). Only enforced when the genome declares that dependency rule.
 pub fn check_dependency_rule(embed: &J) -> Vec<Issue> {
     let arch = embed.get("architecture");
-    let rule = arch.and_then(|a| a.get("dependency_rule")).and_then(J::as_str);
+    let rule = arch
+        .and_then(|a| a.get("dependency_rule"))
+        .and_then(J::as_str);
     if rule != Some("core-independent") {
         return Vec::new();
     }
     let layer_of: std::collections::HashMap<String, String> = components(embed)
-        .filter_map(|(id, c)| c.get("layer").and_then(J::as_str).map(|l| (id.to_string(), l.to_string())))
+        .filter_map(|(id, c)| {
+            c.get("layer")
+                .and_then(J::as_str)
+                .map(|l| (id.to_string(), l.to_string()))
+        })
         .collect();
     let mut out = Vec::new();
-    for link in embed.get("links").and_then(J::as_array).into_iter().flatten() {
+    for link in embed
+        .get("links")
+        .and_then(J::as_array)
+        .into_iter()
+        .flatten()
+    {
         let rel = link.get("relation").and_then(J::as_str).unwrap_or("");
         if rel != "depends_on" && rel != "calls" {
             continue;
         }
-        let (from, to) = (link.get("from").and_then(J::as_str), link.get("to").and_then(J::as_str));
+        let (from, to) = (
+            link.get("from").and_then(J::as_str),
+            link.get("to").and_then(J::as_str),
+        );
         if let (Some(f), Some(t)) = (from, to) {
             let fl = layer_of.get(f).map(String::as_str).unwrap_or("");
             let tl = layer_of.get(t).map(String::as_str).unwrap_or("");
@@ -169,24 +202,71 @@ pub fn check_enums(embed: &J, enums: &J) -> Vec<Issue> {
                 .and_then(J::as_array)
                 .is_some_and(|a| a.iter().any(|x| x.as_str() == Some(v)));
             if !ok {
-                out.push(Issue::error("require_known_enums", format!("{ctx}: unknown {en} \"{v}\"")));
+                out.push(Issue::error(
+                    "require_known_enums",
+                    format!("{ctx}: unknown {en} \"{v}\""),
+                ));
             }
         }
     };
     let p = embed.get("project");
-    check(p.and_then(|p| p.get("domain")).and_then(J::as_str), "domain", "project.domain");
-    check(p.and_then(|p| p.get("status")).and_then(J::as_str), "status", "project.status");
-    check(p.and_then(|p| p.get("source")).and_then(J::as_str), "source", "project.source");
+    check(
+        p.and_then(|p| p.get("domain")).and_then(J::as_str),
+        "domain",
+        "project.domain",
+    );
+    check(
+        p.and_then(|p| p.get("status")).and_then(J::as_str),
+        "status",
+        "project.status",
+    );
+    check(
+        p.and_then(|p| p.get("source")).and_then(J::as_str),
+        "source",
+        "project.source",
+    );
     for (id, c) in components(embed) {
-        check(c.get("status").and_then(J::as_str), "status", &format!("component \"{id}\""));
+        check(
+            c.get("status").and_then(J::as_str),
+            "status",
+            &format!("component \"{id}\""),
+        );
     }
-    for link in embed.get("links").and_then(J::as_array).into_iter().flatten() {
-        check(link.get("relation").and_then(J::as_str), "relation", "link.relation");
-        check(link.get("provenance").and_then(|p| p.get("by")).and_then(J::as_str), "by", "link.provenance.by");
+    for link in embed
+        .get("links")
+        .and_then(J::as_array)
+        .into_iter()
+        .flatten()
+    {
+        check(
+            link.get("relation").and_then(J::as_str),
+            "relation",
+            "link.relation",
+        );
+        check(
+            link.get("provenance")
+                .and_then(|p| p.get("by"))
+                .and_then(J::as_str),
+            "by",
+            "link.provenance.by",
+        );
     }
-    for item in embed.get("lifecycle").and_then(J::as_array).into_iter().flatten() {
-        check(item.get("kind").and_then(J::as_str), "item_kind", "lifecycle.kind");
-        check(item.get("status").and_then(J::as_str), "status", "lifecycle.status");
+    for item in embed
+        .get("lifecycle")
+        .and_then(J::as_array)
+        .into_iter()
+        .flatten()
+    {
+        check(
+            item.get("kind").and_then(J::as_str),
+            "item_kind",
+            "lifecycle.kind",
+        );
+        check(
+            item.get("status").and_then(J::as_str),
+            "status",
+            "lifecycle.status",
+        );
     }
     out
 }
@@ -210,7 +290,11 @@ pub fn check_targets(items: &[J], kind: &str, comp_ids: &HashSet<String>) -> Vec
 
 // --- helpers ---------------------------------------------------------------
 fn components(embed: &J) -> impl Iterator<Item = (&String, &J)> {
-    embed.get("components").and_then(J::as_object).into_iter().flat_map(|o| o.iter())
+    embed
+        .get("components")
+        .and_then(J::as_object)
+        .into_iter()
+        .flat_map(|o| o.iter())
 }
 fn component_ids(embed: &J) -> HashSet<String> {
     components(embed).map(|(k, _)| k.clone()).collect()
@@ -220,7 +304,11 @@ fn includes(genome: &J, facet: &str) -> Vec<String> {
         .get("include")
         .and_then(|i| i.get(facet))
         .and_then(J::as_array)
-        .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect())
+        .map(|a| {
+            a.iter()
+                .filter_map(|x| x.as_str().map(String::from))
+                .collect()
+        })
         .unwrap_or_default()
 }
 
@@ -240,13 +328,17 @@ mod tests {
     fn flags_unknown_enum() {
         let enums = json!({"status":["planned","active"]});
         let e = json!({"components":{"a":{"label":"A","status":"planed"}}});
-        assert!(check_enums(&e, &enums).iter().any(|i| i.message.contains("planed")));
+        assert!(check_enums(&e, &enums)
+            .iter()
+            .any(|i| i.message.contains("planed")));
     }
 
     #[test]
     fn flags_missing_provenance() {
         let e = json!({"components":{"a":{"summary":"x","provenance":{}}}});
-        assert!(check_honesty(&e).iter().any(|i| i.rule == "require_provenance_on_semantic"));
+        assert!(check_honesty(&e)
+            .iter()
+            .any(|i| i.rule == "require_provenance_on_semantic"));
     }
 
     #[test]
@@ -274,7 +366,10 @@ mod tests {
     fn real_genome_has_no_errors() {
         let anchor = Path::new(env!("CARGO_MANIFEST_DIR")).join("nexovia.toml");
         let issues = validate(&anchor).expect("validate");
-        let errors: Vec<_> = issues.iter().filter(|i| i.severity == Severity::Error).collect();
+        let errors: Vec<_> = issues
+            .iter()
+            .filter(|i| i.severity == Severity::Error)
+            .collect();
         assert!(errors.is_empty(), "unexpected errors: {errors:?}");
     }
 }

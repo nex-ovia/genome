@@ -25,7 +25,10 @@ pub fn resolve(anchor: &Path) -> R<J> {
     let inc = obj(&genome, "include");
 
     // --- architecture: composed (extends ⊕ overrides) or self-contained ----
-    let arch = genome.get("architecture").cloned().unwrap_or(J::Object(Map::new()));
+    let arch = genome
+        .get("architecture")
+        .cloned()
+        .unwrap_or(J::Object(Map::new()));
     let architecture = if arch.get("extends").and_then(J::as_str).is_some() {
         resolve_arch_extends(root, &arch)?
     } else {
@@ -59,7 +62,11 @@ pub fn resolve(anchor: &Path) -> R<J> {
     let (mut base_pol, mut local_pol) = (Map::new(), Map::new());
     for f in arr(&inc, "policies") {
         let d = io::load_rel(root, &f)?;
-        let target = if f.starts_with("org/") { &mut base_pol } else { &mut local_pol };
+        let target = if f.starts_with("org/") {
+            &mut base_pol
+        } else {
+            &mut local_pol
+        };
         if let Some(t) = d.as_object() {
             for (k, v) in t {
                 if v.is_object() {
@@ -114,21 +121,41 @@ pub fn resolve(anchor: &Path) -> R<J> {
     let mut delivery = J::Object(Map::new());
     if let Some(f) = arr(&inc, "delivery").first() {
         let d = io::load_rel(root, f)?;
-        let mut m = d.get("delivery").and_then(J::as_object).cloned().unwrap_or_default();
-        m.insert("estimates".into(), d.get("estimate").cloned().unwrap_or(J::Array(vec![])));
+        let mut m = d
+            .get("delivery")
+            .and_then(J::as_object)
+            .cloned()
+            .unwrap_or_default();
+        m.insert(
+            "estimates".into(),
+            d.get("estimate").cloned().unwrap_or(J::Array(vec![])),
+        );
         delivery = J::Object(m);
     }
     let mut deployment = J::Object(Map::new());
     if let Some(f) = arr(&inc, "deployment").first() {
         let d = io::load_rel(root, f)?;
-        deployment = d.get("deployment").cloned().unwrap_or(J::Object(Map::new()));
+        deployment = d
+            .get("deployment")
+            .cloned()
+            .unwrap_or(J::Object(Map::new()));
     }
     let mut quality = J::Object(Map::new());
     if let Some(f) = arr(&inc, "quality").first() {
         let q = io::load_rel(root, f)?;
-        let mut m = q.get("quality").and_then(J::as_object).cloned().unwrap_or_default();
-        m.insert("budgets".into(), q.get("budget").cloned().unwrap_or(J::Array(vec![])));
-        m.insert("gates".into(), q.get("gate").cloned().unwrap_or(J::Array(vec![])));
+        let mut m = q
+            .get("quality")
+            .and_then(J::as_object)
+            .cloned()
+            .unwrap_or_default();
+        m.insert(
+            "budgets".into(),
+            q.get("budget").cloned().unwrap_or(J::Array(vec![])),
+        );
+        m.insert(
+            "gates".into(),
+            q.get("gate").cloned().unwrap_or(J::Array(vec![])),
+        );
         quality = J::Object(m);
     }
 
@@ -149,7 +176,11 @@ pub fn resolve(anchor: &Path) -> R<J> {
     }
 
     // --- assemble the embed (key order is part of the contract) -------------
-    let mut project = genome.get("project").and_then(J::as_object).cloned().unwrap_or_default();
+    let mut project = genome
+        .get("project")
+        .and_then(J::as_object)
+        .cloned()
+        .unwrap_or_default();
     if let Some(J::String(intent)) = project.get("intent") {
         let collapsed = intent.split_whitespace().collect::<Vec<_>>().join(" ");
         project.insert("intent".into(), J::String(collapsed));
@@ -181,9 +212,18 @@ pub fn resolve(anchor: &Path) -> R<J> {
 /// what this genome changes; each layer tagged inherited / override / local.
 fn resolve_arch_extends(root: &Path, arch: &J) -> R<J> {
     let base = io::load_rel(root, arch.get("extends").and_then(J::as_str).unwrap_or(""))?;
-    let overrides = arch.get("layers").and_then(J::as_object).cloned().unwrap_or_default();
+    let overrides = arch
+        .get("layers")
+        .and_then(J::as_object)
+        .cloned()
+        .unwrap_or_default();
     let mut layers = Map::new();
-    for (name, l) in base.get("layers").and_then(J::as_object).cloned().unwrap_or_default() {
+    for (name, l) in base
+        .get("layers")
+        .and_then(J::as_object)
+        .cloned()
+        .unwrap_or_default()
+    {
         let mut merged = l.as_object().cloned().unwrap_or_default();
         let mut ov: Vec<J> = vec![];
         if let Some(o) = overrides.get(&name).and_then(J::as_object) {
@@ -194,7 +234,11 @@ fn resolve_arch_extends(root: &Path, arch: &J) -> R<J> {
                 merged.insert(k.clone(), v.clone());
             }
         }
-        let src = if ov.is_empty() { "inherited" } else { "override" };
+        let src = if ov.is_empty() {
+            "inherited"
+        } else {
+            "override"
+        };
         merged.insert("_ov".into(), J::Array(ov));
         merged.insert("_src".into(), J::String(src.into()));
         layers.insert(name, J::Object(merged));
@@ -213,8 +257,14 @@ fn resolve_arch_extends(root: &Path, arch: &J) -> R<J> {
     for k in ["pattern", "basis", "dependency_rule", "description"] {
         out.insert(k.into(), base.get(k).cloned().unwrap_or(J::Null));
     }
-    out.insert("extends".into(), arch.get("extends").cloned().unwrap_or(J::Null));
-    out.insert("fluid".into(), arch.get("fluid").cloned().unwrap_or(J::Bool(false)));
+    out.insert(
+        "extends".into(),
+        arch.get("extends").cloned().unwrap_or(J::Null),
+    );
+    out.insert(
+        "fluid".into(),
+        arch.get("fluid").cloned().unwrap_or(J::Bool(false)),
+    );
     out.insert("layers".into(), J::Object(layers));
     Ok(J::Object(out))
 }
@@ -223,7 +273,12 @@ fn resolve_arch_extends(root: &Path, arch: &J) -> R<J> {
 /// is local. Preserves the genome's own field order, layers last.
 fn resolve_arch_inline(arch: &J) -> J {
     let mut layers = Map::new();
-    for (name, l) in arch.get("layers").and_then(J::as_object).cloned().unwrap_or_default() {
+    for (name, l) in arch
+        .get("layers")
+        .and_then(J::as_object)
+        .cloned()
+        .unwrap_or_default()
+    {
         let mut m = l.as_object().cloned().unwrap_or_default();
         m.insert("_ov".into(), J::Array(vec![]));
         m.insert("_src".into(), J::String("local".into()));
@@ -246,6 +301,10 @@ fn obj(v: &J, key: &str) -> J {
 fn arr(v: &J, key: &str) -> Vec<String> {
     v.get(key)
         .and_then(J::as_array)
-        .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect())
+        .map(|a| {
+            a.iter()
+                .filter_map(|x| x.as_str().map(String::from))
+                .collect()
+        })
         .unwrap_or_default()
 }

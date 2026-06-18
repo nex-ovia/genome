@@ -18,7 +18,10 @@ struct Section {
 /// Ingest a markdown document into a self-contained genome value.
 pub fn from_doc(path: &Path) -> R<J> {
     let text = std::fs::read_to_string(path)?;
-    let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("document");
+    let stem = path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("document");
     Ok(build_genome(stem, sections(&text)))
 }
 
@@ -40,7 +43,11 @@ fn sections(text: &str) -> Vec<Section> {
             }
             Event::End(TagEnd::Heading(_)) => {
                 in_head = false;
-                out.push(Section { level, title: buf.trim().to_string(), summary: None });
+                out.push(Section {
+                    level,
+                    title: buf.trim().to_string(),
+                    summary: None,
+                });
                 buf.clear();
             }
             Event::Start(Tag::Paragraph) => {
@@ -64,10 +71,8 @@ fn sections(text: &str) -> Vec<Section> {
                     buf.push_str(&t);
                 }
             }
-            Event::SoftBreak | Event::HardBreak => {
-                if in_head || in_para {
-                    buf.push(' ');
-                }
+            Event::SoftBreak | Event::HardBreak if (in_head || in_para) => {
+                buf.push(' ');
             }
             _ => {}
         }
@@ -95,7 +100,10 @@ fn build_genome(stem: &str, mut secs: Vec<Section>) -> J {
     let mut cur_layer = String::new();
 
     if !has_h3 {
-        layers.insert("outline".into(), json!({ "order": 1, "label": "Outline", "role": "The document's sections." }));
+        layers.insert(
+            "outline".into(),
+            json!({ "order": 1, "label": "Outline", "role": "The document's sections." }),
+        );
         cur_layer = "outline".into();
     }
     for s in &secs {
@@ -111,7 +119,7 @@ fn build_genome(stem: &str, mut secs: Vec<Section>) -> J {
             cur_layer = id.clone();
             layers.insert(id, J::Object(layer));
         } else {
-            comps.insert(slugs.make(&s.title), component(&s, &cur_layer));
+            comps.insert(slugs.make(&s.title), component(s, &cur_layer));
         }
     }
 
@@ -119,7 +127,14 @@ fn build_genome(stem: &str, mut secs: Vec<Section>) -> J {
     project.insert("name".into(), J::String(name));
     project.insert("kind".into(), J::String("document".into()));
     project.insert("domain".into(), J::String("document".into()));
-    project.insert("summary".into(), J::String(if summary.is_empty() { "—".into() } else { summary }));
+    project.insert(
+        "summary".into(),
+        J::String(if summary.is_empty() {
+            "—".into()
+        } else {
+            summary
+        }),
+    );
     project.insert("source".into(), J::String("document".into()));
     project.insert("schema".into(), J::String("nexovia/2".into()));
     project.insert("status".into(), J::String("draft".into()));
@@ -140,7 +155,10 @@ fn component(s: &Section, layer: &str) -> J {
     c.insert("status".into(), J::String("draft".into()));
     if let Some(sum) = &s.summary {
         c.insert("summary".into(), J::String(sum.clone()));
-        c.insert("provenance".into(), json!({ "summary": { "by": "scan", "confidence": 1.0 } }));
+        c.insert(
+            "provenance".into(),
+            json!({ "summary": { "by": "scan", "confidence": 1.0 } }),
+        );
     }
     J::Object(c)
 }
@@ -151,10 +169,20 @@ impl SlugSet {
     fn make(&mut self, title: &str) -> String {
         let base: String = title
             .chars()
-            .map(|c| if c.is_ascii_alphanumeric() { c.to_ascii_lowercase() } else { '_' })
+            .map(|c| {
+                if c.is_ascii_alphanumeric() {
+                    c.to_ascii_lowercase()
+                } else {
+                    '_'
+                }
+            })
             .collect();
         let base = base.trim_matches('_').replace("__", "_");
-        let base = if base.is_empty() { "section".into() } else { base };
+        let base = if base.is_empty() {
+            "section".into()
+        } else {
+            base
+        };
         let mut id = base.clone();
         let mut n = 2;
         while !self.0.insert(id.clone()) {
@@ -170,7 +198,9 @@ fn titlecase(s: &str) -> String {
         .filter(|w| !w.is_empty())
         .map(|w| {
             let mut ch = w.chars();
-            ch.next().map(|f| f.to_uppercase().collect::<String>() + ch.as_str()).unwrap_or_default()
+            ch.next()
+                .map(|f| f.to_uppercase().collect::<String>() + ch.as_str())
+                .unwrap_or_default()
         })
         .collect::<Vec<_>>()
         .join(" ")
@@ -197,7 +227,10 @@ mod tests {
     fn h2_become_layers_when_h3_present() {
         let md = "# T\n\n## Part\n\n### Section\n\nBody text.\n";
         let g = build_genome("doc", sections(md));
-        assert!(g["architecture"]["layers"].as_object().unwrap().contains_key("part"));
+        assert!(g["architecture"]["layers"]
+            .as_object()
+            .unwrap()
+            .contains_key("part"));
         assert_eq!(g["components"]["section"]["layer"], "part");
     }
 }
