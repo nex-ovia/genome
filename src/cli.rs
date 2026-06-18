@@ -61,6 +61,21 @@ pub fn run(mut args: impl Iterator<Item = String>) -> R {
             eprintln!("recorded {decision} on {target}");
             Ok(())
         }
+        Some("enrich") => {
+            let path: PathBuf = args
+                .next()
+                .ok_or("usage: genome enrich <genome.toml>")?
+                .into();
+            #[cfg(feature = "enrich")]
+            {
+                crate::enrich::llm::enrich(&path)
+            }
+            #[cfg(not(feature = "enrich"))]
+            {
+                let _ = path;
+                Err("enrich is a build-time feature — rebuild with `--features enrich`".into())
+            }
+        }
         Some("render") => {
             let path: PathBuf = args
                 .next()

@@ -88,12 +88,12 @@ label   = "LLM enrichment"
 path    = "src/enrich/llm.rs"
 kind    = "module"
 layer   = "persistence"
-status  = "planned"
+status  = "active"
 summary = "Optional, feature-gated pass that fills empty semantic fields — summary, why — using an embedded in-process GGUF \"flash\" model (no server, no network). Stamps each by=llm with a calibrated confidence."
 why     = "The hybrid intelligence lives here and only here, kept off the default path so the core binary stays small. Embedded GGUF means comprehension for non-developers works fully offline — the efficiency policy holds even while enriching."
 tags    = ["enrich", "optional"]
-functions = ["enrich", "fill_summary"]
-libraries = ["embedded GGUF inference (feature: enrich)", "serde_json"]
+functions = ["enrich", "generate", "ensure_model"]
+libraries = ["llama-cpp-2 (embedded GGUF, feature: enrich)", "ureq", "toml_edit"]
 
 [components.enrich_llm.provenance]
 summary = { by = "human", confidence = 1.0 }

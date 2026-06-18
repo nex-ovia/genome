@@ -16,10 +16,16 @@ serde_json = { version = "1", features = ["preserve_order"] }
 toml = { version = "0.8", features = ["preserve_order"] }
 pulldown-cmark = { version = "0.12", default-features = false }
 
+# Optional, off the default path (efficiency policy). enrich = offline embedded
+# GGUF inference (llama.cpp), a one-time model fetch (ureq), and in-place TOML
+# edits that preserve formatting (toml_edit).
+llama-cpp-2 = { version = "0.1", optional = true }
+ureq = { version = "2", optional = true }
+toml_edit = { version = "0.22", optional = true }
+
 [features]
 default = []
-# Optional capability stays off the default path (efficiency policy):
-enrich = []   # embedded GGUF inference (added in a later step)
+enrich = ["dep:llama-cpp-2", "dep:ureq", "dep:toml_edit"]
 
 [profile.release]
 opt-level = "z"

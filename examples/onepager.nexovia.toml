@@ -1,0 +1,57 @@
+[project]
+name = "Helios Reconciliation"
+kind = "document"
+domain = "document"
+summary = "A one-pager for a new internal tool that reconciles vendor invoices against purchase orders, so finance stops doing it by hand."
+source = "document"
+schema = "nexovia/2"
+status = "draft"
+
+[architecture]
+pattern = "outline"
+description = "Sections of the document, as an outline."
+
+[architecture.layers.problem]
+order = 1
+label = "Problem"
+role = "Finance analysts spend hours every week matching invoices to POs in spreadsheets. It is slow, error-prone, and nobody trusts the numbers at quarter-end."
+
+[architecture.layers.approach]
+order = 2
+label = "Approach"
+role = "A small service ingests invoices and POs, matches them on amount and vendor, and flags the exceptions a human must look at. Deterministic first, with a review queue for the ambiguous cases."
+
+[architecture.layers.risks]
+order = 3
+label = "Risks"
+role = "Vendor names are inconsistent across systems, and partial shipments make amounts disagree. Both will need careful normalization."
+
+[components.ingest]
+label = "Ingest"
+layer = "approach"
+status = "draft"
+summary = "Pull invoices and purchase orders from the existing accounting export. No new data entry; read what is already there."
+
+[components.ingest.provenance.summary]
+by = "scan"
+confidence = 1.0
+
+[components.match]
+label = "Match"
+layer = "approach"
+status = "draft"
+summary = "Pair each invoice with its purchase order on vendor and amount, within a tolerance. Confident matches clear automatically."
+
+[components.match.provenance.summary]
+by = "scan"
+confidence = 1.0
+
+[components.review_queue]
+label = "Review queue"
+layer = "approach"
+status = "draft"
+summary = "Everything the matcher is unsure about lands in a queue for an analyst to resolve, so no exception is silently dropped."
+
+[components.review_queue.provenance.summary]
+by = "scan"
+confidence = 1.0
