@@ -3,7 +3,7 @@ const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls)
 
 async function init() {
   let data;
-  try { data = await (await fetch('/content.json')).json(); }
+  try { data = await (await fetch('content.json')).json(); }
   catch (err) { console.error('content load failed', err); return; }
   render(data);
   behaviors();

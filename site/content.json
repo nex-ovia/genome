@@ -8,7 +8,7 @@
   "links": {
     "github": "https://github.com/nex-ovia/genome",
     "releases": "https://github.com/nex-ovia/genome/releases",
-    "demo": "/demo/",
+    "demo": "demo/",
     "hub": "https://www.nex-ovia.com",
     "sponsor": "https://github.com/sponsors/nex-ovia"
   },
@@ -20,7 +20,7 @@
   ],
   "hero": {
     "eyebrow": "Available · Experimental · Built on NXS",
-    "primary": { "label": "See the live demo", "href": "/demo/" },
+    "primary": { "label": "See the live demo", "href": "demo/" },
     "secondary": { "label": "View on GitHub", "href": "https://github.com/nex-ovia/genome" }
   },
   "install": {
